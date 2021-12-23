@@ -26,21 +26,25 @@ class Heroe(pygame.sprite.Sprite):
         self.swim = self.y + 10
         self.flag_swim = 1
 
-    def update(self):
-        if self.flag_swim:
-            self.y += 1
-        else:
-            self.y -= 1
-        if self.swim == self.y:
-            self.flag_swim += 1
-            self.flag_swim %= 2
+    def update(self, fly):
+        if not fly:
             if self.flag_swim:
-                self.swim = self.y + 10
+                self.y += 1
             else:
-                self.swim = self.y - 10
-
-        self.rect = pygame.Rect(self.x, int(self.y),
-                                self.size_square, self.size_square)
+                self.y -= 1
+            if self.swim == self.y:
+                self.flag_swim += 1
+                self.flag_swim %= 2
+                if self.flag_swim:
+                    self.swim = self.y + 20
+                else:
+                    self.swim = self.y - 20
+        else:
+            if self.flag_swim:
+                self.swim = self.y + 20
+            else:
+                self.swim = self.y - 20
+        self.rect = pygame.Rect(self.x, self.y, self.size_square, self.size_square)
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -110,7 +114,7 @@ def main():
                     spr.x += 10
         if directions['up']:
             for spr in square_sprites:
-                if spr.y > 0:
+                if spr.y > 10:
                     spr.y -= 10
         if directions['down']:
             for spr in square_sprites:
@@ -131,7 +135,7 @@ def main():
         square_sprites.draw(screen)
         platform_sprites.draw(screen)
         platform_sprites.update()
-        square_sprites.update()
+        square_sprites.update(directions['down'] or directions['up'])
         clock.tick(fps)
         pygame.display.flip()
         clock.tick(fps)
