@@ -79,14 +79,16 @@ def main():
                 if event.button == 1:
                     directions['mouse'] = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT or event.key == pygame.K_d:
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = True
-                elif event.key == pygame.K_RIGHT or event.key == pygame.K_a:
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     directions['left'] = True
                 if event.key == pygame.K_UP or event.key == pygame.K_w:
                     directions['up'] = True
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                     directions['down'] = True
+                if event.key == pygame.K_SPACE:
+                    directions['mouse'] = True
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = False
@@ -96,6 +98,8 @@ def main():
                     directions['up'] = False
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                     directions['down'] = False
+                if event.key == pygame.K_SPACE:
+                    directions['mouse'] = False
         if directions['left']:
             for spr in square_sprites:
                 if spr.x > 0:
