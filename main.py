@@ -119,7 +119,7 @@ def main():
         if tic == 0:
             if directions['mouse']:
                 for spr in square_sprites:
-                    Bullet((spr.x, spr.y))
+                    Bullet((spr.x + 7, spr.y - 20))
         for spr in square_sprites:
             if spr.y > 800:
                 spr.kill()
