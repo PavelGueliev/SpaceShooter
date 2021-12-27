@@ -1,3 +1,5 @@
+from random import randint
+
 import pygame
 
 Enemy_sprites = pygame.sprite.Group()
@@ -6,6 +8,7 @@ platform_sprites = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
+stars_sprites = pygame.sprite.Group()
 size = width, height = 500, 700
 v = 50
 fps = 60
@@ -39,14 +42,14 @@ class Heroe(pygame.sprite.Sprite):
                 self.flag_swim += 1
                 self.flag_swim %= 2
                 if self.flag_swim:
-                    self.swim = self.y + 20
+                    self.swim = self.y + 10
                 else:
-                    self.swim = self.y - 20
+                    self.swim = self.y - 10
         else:
             if self.flag_swim:
-                self.swim = self.y + 20
+                self.swim = self.y + 10
             else:
-                self.swim = self.y - 20
+                self.swim = self.y - 10
         self.rect = pygame.Rect(self.x, self.y, self.size_square, self.size_square)
 
 
@@ -66,6 +69,26 @@ class Bullet(pygame.sprite.Sprite):
     def update(self):
         self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
         self.y -= 10
+
+
+class Stars(pygame.sprite.DirtySprite):
+    size_platform = 5, 5
+
+    def __init__(self, pos):
+        super().__init__(stars_sprites)
+        self.just_size = self.size_platform
+        self.image = pygame.Surface((self.just_size[0], self.just_size[1]),
+                                    pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("white"),
+                         (0, 0, self.just_size[0], self.just_size[1]))
+        self.rect = pygame.Rect(*pos, self.just_size[0], self.just_size[1])
+        self.x, self.y = pos[0], pos[1] - 100
+
+    def update(self):
+        self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
+        self.y += 1
+        if self.rect.y > height:
+            self.kill()
 
 
 class Border(pygame.sprite.Sprite):
@@ -103,6 +126,8 @@ class Enemy_type_1(pygame.sprite.Sprite):
 
 def main():
     clock = pygame.time.Clock()
+    for i in range(100):
+        Stars((randint(0, 500), randint(-700, 700)))
     running = True
     Heroe((250, 600))
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
@@ -111,6 +136,7 @@ def main():
     Border(5, height - 5, width - 5, height - 5)
     Border(5, 5, 5, height - 5)
     Border(width - 5, 5, width - 5, height - 5)
+
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
@@ -163,7 +189,7 @@ def main():
             for spr in square_sprites:
                 if spr.y < 600:
                     spr.y += 10
-        if tic == 0:
+        if tic % 6 == 0:
             if directions['mouse']:
                 for spr in square_sprites:
                     Bullet((spr.x + 7, spr.y - 20))
@@ -174,12 +200,20 @@ def main():
             if spr.y < 0:
                 spr.kill()
         tic += 1
-        tic %= 8
+        if tic % 2 == 0:
+            stars_sprites.update()
+        if tic % 500 == 0:
+            for i in range(50):
+                Stars((randint(0, 500), randint(-700, 0)))
+            tic = 0
+        stars_sprites.draw(screen)
         square_sprites.draw(screen)
         Enemy_sprites.draw(screen)
         platform_sprites.draw(screen)
+
         platform_sprites.update()
         square_sprites.update(directions['down'] or directions['up'])
+
         Enemy_sprites.update()
         clock.tick(fps)
         pygame.display.flip()
