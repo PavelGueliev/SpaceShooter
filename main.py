@@ -1,8 +1,11 @@
 import pygame
 
-
+Enemy_sprites = pygame.sprite.Group()
 square_sprites = pygame.sprite.Group()
 platform_sprites = pygame.sprite.Group()
+all_sprites = pygame.sprite.Group()
+horizontal_borders = pygame.sprite.Group()
+vertical_borders = pygame.sprite.Group()
 size = width, height = 500, 700
 v = 50
 fps = 60
@@ -65,12 +68,49 @@ class Bullet(pygame.sprite.Sprite):
         self.y -= 10
 
 
+class Border(pygame.sprite.Sprite):
+    def __init__(self, x1, y1, x2, y2):
+        super().__init__(all_sprites)
+        if x1 == x2:
+            self.add(vertical_borders)
+            self.image = pygame.Surface([1, y2 - y1])
+            self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
+        else:
+            self.add(horizontal_borders)
+            self.image = pygame.Surface([x2 - x1, 1])
+            self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
+
+
+class Enemy_type_1(pygame.sprite.Sprite):
+    size_platform = 25, 25
+
+    def __init__(self, pos):
+        super().__init__(Enemy_sprites)
+        self.size_of_enemy = self.size_platform
+        self.image = pygame.Surface((self.size_of_enemy[0], self.size_of_enemy[1]),
+                                    pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("red"), (0, 0, self.size_of_enemy[0], self.size_of_enemy[1]))
+        self.rect = pygame.Rect(*pos, self.size_of_enemy[0], self.size_of_enemy[1])
+        self.x, self.y = pos
+
+    def update(self):
+        self.rect = self.rect.move(self.x, self.y)
+        if pygame.sprite.spritecollideany(self, horizontal_borders):
+            self.y = -self.y
+        if pygame.sprite.spritecollideany(self, vertical_borders):
+            self.x = -self.x
+
+
 def main():
     clock = pygame.time.Clock()
     running = True
     Heroe((250, 600))
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
     tic = 10
+    Border(5, 5, width - 5, 5)
+    Border(5, height - 5, width - 5, height - 5)
+    Border(5, 5, 5, height - 5)
+    Border(width - 5, 5, width - 5, height - 5)
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
@@ -82,6 +122,9 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     directions['mouse'] = False
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 3:
+                    Enemy_type_1((10, 10))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = True
@@ -133,9 +176,11 @@ def main():
         tic += 1
         tic %= 8
         square_sprites.draw(screen)
+        Enemy_sprites.draw(screen)
         platform_sprites.draw(screen)
         platform_sprites.update()
         square_sprites.update(directions['down'] or directions['up'])
+        Enemy_sprites.update()
         clock.tick(fps)
         pygame.display.flip()
         clock.tick(fps)
