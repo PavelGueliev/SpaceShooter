@@ -1,3 +1,4 @@
+import sys
 from random import randint
 
 import pygame
@@ -9,6 +10,8 @@ all_sprites = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
+menu_sprites = pygame.sprite.Group()
+pygame.init()
 size = width, height = 500, 700
 v = 50
 fps = 60
@@ -113,7 +116,7 @@ class Enemy_type_1(pygame.sprite.Sprite):
         self.image = pygame.Surface((self.size_of_enemy[0], self.size_of_enemy[1]),
                                     pygame.SRCALPHA)
         pygame.draw.rect(self.image, pygame.Color("red"), (0, 0, self.size_of_enemy[0], self.size_of_enemy[1]))
-        self.rect = pygame.Rect(*pos, self.size_of_enemy[0], self.size_of_enemy[1])
+        self.rect = pygame.Rect(*pos, *self.size_of_enemy)
         self.x, self.y = pos
 
     def update(self):
@@ -124,7 +127,86 @@ class Enemy_type_1(pygame.sprite.Sprite):
             self.x = -self.x
 
 
+class Button(pygame.sprite.DirtySprite):
+    def __init__(self, x, y, image, scale):
+        super().__init__(menu_sprites)
+        width = image.get_width()
+        height = image.get_height()
+        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicked = False
+
+    def draw(self, surface):
+        action = False
+        # get mouse position
+        pos = pygame.mouse.get_pos()
+
+        # check mouseover and clicked conditions
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicked is False:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        # draw button on screen
+        surface.blit(self.image, (self.rect.x, self.rect.y))
+
+        return action
+
+
+def terminate():
+    pygame.quit()
+    sys.exit
+
+
+def start_screen():
+    start_img = pygame.image.load('box.png').convert_alpha()
+    exit_img = pygame.image.load('grass.png').convert_alpha()
+
+    # create button instances
+    start_button = Button(100, 200, start_img, 0.8)
+    exit_button = Button(100, 250, exit_img, 0.8)
+
+    # game loop
+
+    for i in range(50):
+        Stars((randint(0, width), randint(-height, height)))
+
+    tic = 0
+    run = True
+    clock = pygame.time.Clock()
+    while run:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            # quit game
+            if event.type == pygame.QUIT:
+                run = False
+        if start_button.draw(screen):
+            return
+        if exit_button.draw(screen):
+            terminate()
+            break
+        if tic % 500 == 0:
+            for i in range(50):
+                Stars((randint(0, width), randint(-height, 0)))
+            tic = 0
+        tic += 1
+        stars_sprites.draw(screen)
+        menu_sprites.draw(screen)
+        menu_sprites.update()
+
+        stars_sprites.update()
+
+        pygame.display.flip()
+        clock.tick(60)
+    pygame.quit()
+
+
 def main():
+    start_screen()
     clock = pygame.time.Clock()
     for i in range(100):
         Stars((randint(0, 500), randint(-700, 700)))
@@ -136,7 +218,6 @@ def main():
     Border(5, height - 5, width - 5, height - 5)
     Border(5, 5, 5, height - 5)
     Border(width - 5, 5, width - 5, height - 5)
-
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
@@ -162,6 +243,8 @@ def main():
                     directions['down'] = True
                 if event.key == pygame.K_SPACE:
                     directions['mouse'] = True
+                if event.key == pygame.K_ESCAPE:
+                    start_screen()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = False
@@ -189,8 +272,8 @@ def main():
             for spr in square_sprites:
                 if spr.y < 600:
                     spr.y += 10
-        if tic % 6 == 0:
-            if directions['mouse']:
+        if directions['mouse']:
+            if tic % 6 == 0:
                 for spr in square_sprites:
                     Bullet((spr.x + 7, spr.y - 20))
         for spr in square_sprites:
