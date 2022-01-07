@@ -1,6 +1,6 @@
 import sys
 from random import randint
-
+from datetime import datetime
 import pygame
 
 Enemy_sprites = pygame.sprite.Group()
@@ -124,7 +124,7 @@ class Stars(pygame.sprite.DirtySprite):
         pygame.draw.rect(self.image, pygame.Color("white"),
                          (0, 0, self.just_size[0], self.just_size[1]))
         self.rect = pygame.Rect(*pos, self.just_size[0], self.just_size[1])
-        self.x, self.y = pos[0], pos[1] - 100
+        self.x, self.y = pos[0], pos[1]
         self.u = randint(1, 8)
 
     def update(self):
@@ -212,8 +212,7 @@ class Enemy_type_3(pygame.sprite.Sprite):
     def update(self):
         if pygame.sprite.spritecollideany(self, bullets_sprites):
             self.count += 1
-            print(self.count)
-            if self.count == 1500:
+            if self.count == 150:
                 self.kill()
                 return
 
@@ -249,7 +248,7 @@ class Button(pygame.sprite.DirtySprite):
 
 
 def start_screen(command='continue'):
-    global tic
+    global tic, start_time, buf_of_level
     start_img = pygame.image.load('Game.png').convert_alpha()
     exit_img = pygame.image.load('Exit.png').convert_alpha()
     credit_img = pygame.image.load('Credit.png').convert_alpha()
@@ -277,6 +276,7 @@ def start_screen(command='continue'):
                 if event.key == pygame.K_ESCAPE and command != 'start':
                     return
         if start_button.draw(screen):
+            start_time = datetime.now()
             return
         if exit_button.draw(screen):
             terminate()
@@ -302,12 +302,30 @@ def terminate():
     sys.exit()
 
 
+def load_level(txt_file):
+    lst = []
+    with open(f'levels/{txt_file}', 'r', encoding='UTF-8') as f:
+        for line in f.readlines():
+            if line[0].isdigit():
+                line = line.split(';')
+                for x in range(3):
+                    line[x] = int(line[x])
+                line[3] = line[3].strip()
+                k = []
+                for coord in line[3].split(','):
+                    k.append([int(x) for x in coord.split()])
+                line[3] = k
+                lst.append(line)
+    return lst
+
+
 def main():
-    global tic
+    global tic, start_time, buf_of_level
+    buf_of_level = load_level('1.txt')
     start_screen('start')
     clock = pygame.time.Clock()
     running = True
-    Hero((250, 600))
+    Hero((int(width * 0.5), int(height * 0.75)))
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
     Border(5, 5, width - 5, 5)
     Border(5, height - 5, width - 5, height - 5)
@@ -359,7 +377,7 @@ def main():
                     spr.x -= 10
         if directions['right']:
             for spr in hero_sprites:
-                if spr.x < 480:
+                if spr.x < width - 20:
                     spr.x += 10
         if directions['up']:
             for spr in hero_sprites:
@@ -367,10 +385,10 @@ def main():
                     spr.y -= 10
         if directions['down']:
             for spr in hero_sprites:
-                if spr.y < 600:
+                if spr.y < height - 20:
                     spr.y += 10
         if directions['mouse']:
-            if tic % 1 == 0:
+            if tic % 15 == 0:
                 for spr in hero_sprites:
                     if spr.effect_bullet == 1:
                         Bullet((spr.x + 7, spr.y - 20))
@@ -378,24 +396,35 @@ def main():
                         Bullet((spr.x - 3, spr.y - 17))
                         Bullet((spr.x + 7, spr.y - 28))
                         Bullet((spr.x + 17, spr.y - 23))
-        for spr in hero_sprites:
-            if spr.y > 800:
-                spr.kill()
         for spr in bullets_sprites:
             if spr.y < 0:
                 spr.kill()
         for bul in enemy_bullet_sprites:
-            if bul.y > 800:
-                bul.kill()
-            if bul.y < 0:
+            if bul.y > height:
                 bul.kill()
         if tic % 2 == 0:
             stars_sprites.update()
         if tic % 500 == 0:
             for i in range(50):
-                Stars((randint(0, 500), randint(-700, 0)))
+                Stars((randint(0, width), randint(-height, 0)))
             tic = 0
         tic += 1
+        try:
+            print(int((datetime.now() - start_time).total_seconds() * 100) % 100)
+            if int((datetime.now() - start_time).total_seconds()) >= buf_of_level[0][0] and\
+                    0 <= int((datetime.now() - start_time).total_seconds() * 100) % 100 < 2:
+                for i in range(buf_of_level[0][2]):
+                    print(buf_of_level[0][3][i])
+                    if buf_of_level[0][1] == 1:
+                        Enemy_type_1(buf_of_level[0][3][i])
+                    elif buf_of_level[0][1] == 2:
+                        Enemy_type_2(buf_of_level[0][3][i])
+                    elif buf_of_level[0][1] == 3:
+                        Enemy_type_3(buf_of_level[0][3][i])
+                start_time = datetime.now()
+                del buf_of_level[0]
+        except:
+            pass
         stars_sprites.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
