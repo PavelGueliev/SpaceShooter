@@ -4,6 +4,8 @@ from random import randint
 import pygame
 
 Enemy_sprites = pygame.sprite.Group()
+Enemy_sprites_2 = pygame.sprite.Group()
+enemy_bullet_sprites = pygame.sprite.Group()
 hero_sprites = pygame.sprite.Group()
 bullets_sprites = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
@@ -15,8 +17,10 @@ pygame.init()
 size = width, height = 500, 700
 v = 50
 fps = 60
-tic = 0
+tic = 10
+buf_of_level = []
 screen = pygame.display.set_mode(size)
+count = 0
 
 
 class Hero(pygame.sprite.Sprite):
@@ -35,7 +39,7 @@ class Hero(pygame.sprite.Sprite):
         self.x, self.y = pos
         self.swim = self.y + 10
         self.flag_swim = 1
-        self.effect_bullet = 1
+        self.effect_bullet = 2
 
     def update(self, fly):
         self.rect = pygame.Rect(self.x, self.y, self.size_square, self.size_square)
@@ -55,6 +59,13 @@ class Bullet(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
+        if pygame.sprite.spritecollideany(self, Enemy_sprites):
+            self.kill()
+            return
+        elif pygame.sprite.spritecollideany(self, Enemy_sprites_2):
+            self.kill()
+            return
+
         self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
         self.y -= 10
 
@@ -73,8 +84,33 @@ class Bullet_2(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
+        if pygame.sprite.spritecollideany(self, Enemy_sprites):
+            self.kill()
+            return
+        elif pygame.sprite.spritecollideany(self, Enemy_sprites_2):
+            self.kill()
+            return
+
         self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
         self.y -= 10
+
+
+class Bullet_of_Enemy(pygame.sprite.Sprite):
+    size_platform = 5, 20
+
+    def __init__(self, pos):
+        super().__init__(enemy_bullet_sprites)
+        self.just_size = self.size_platform
+        self.image = pygame.Surface((self.just_size[0], self.just_size[1]),
+                                    pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("red"),
+                         (0, 0, self.just_size[0], self.just_size[1]))
+        self.rect = pygame.Rect(*pos, self.just_size[0], self.just_size[1])
+        self.x, self.y = pos[0], pos[1]
+
+    def update(self):
+        self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
+        self.y += 10
 
 
 class Stars(pygame.sprite.DirtySprite):
@@ -119,16 +155,67 @@ class Enemy_type_1(pygame.sprite.Sprite):
         self.size_of_enemy = self.size_platform
         self.image = pygame.Surface((self.size_of_enemy[0], self.size_of_enemy[1]),
                                     pygame.SRCALPHA)
-        pygame.draw.rect(self.image, pygame.Color("red"), (0, 0, self.size_of_enemy[0], self.size_of_enemy[1]))
+        pygame.draw.rect(self.image, pygame.Color("pink"), (0, 0, self.size_of_enemy[0], self.size_of_enemy[1]))
         self.rect = pygame.Rect(*pos, *self.size_of_enemy)
         self.x, self.y = pos
 
     def update(self):
-        self.rect = self.rect.move(self.x, self.y)
-        if pygame.sprite.spritecollideany(self, horizontal_borders):
-            self.y = -self.y
+        if pygame.sprite.spritecollideany(self, bullets_sprites):
+            self.kill()
+            return
+        if tic % 2 == 0:
+            self.rect = self.rect.move(self.x * 0.5, self.y * 0.15)
+            if pygame.sprite.spritecollideany(self, horizontal_borders):
+                self.y = -self.y
+            if pygame.sprite.spritecollideany(self, vertical_borders):
+                self.x = -self.x
+
+
+class Enemy_type_2(pygame.sprite.Sprite):
+    size_platform = 25, 25
+
+    def __init__(self, pos):
+        super().__init__(Enemy_sprites_2)
+        self.size_of_enemy = self.size_platform
+        self.image = pygame.Surface((self.size_of_enemy[0], self.size_of_enemy[1]),
+                                    pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("#DC143C"), (0, 0, self.size_of_enemy[0], self.size_of_enemy[1]))
+        self.rect = pygame.Rect(*pos, self.size_of_enemy[0], self.size_of_enemy[1])
+        self.x, self.y = pos
+
+    def update(self):
+        if tic % 15 == 0:
+            Bullet_of_Enemy((self.rect.x, self.rect.y + 10))
+
+        if pygame.sprite.spritecollideany(self, bullets_sprites):
+            self.kill()
+            return
+
+        self.rect = self.rect.move(self.x * 0.15, self.y * 0)
         if pygame.sprite.spritecollideany(self, vertical_borders):
             self.x = -self.x
+
+
+class Enemy_type_3(pygame.sprite.Sprite):
+    size_platform = 150, 150
+
+    def __init__(self, pos):
+        self.count = count
+        super().__init__(Enemy_sprites)
+        self.size_of_enemy = self.size_platform
+        self.image = pygame.Surface((self.size_of_enemy[0], self.size_of_enemy[1]),
+                                    pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("DarkMagenta"), (0, 0, self.size_of_enemy[0], self.size_of_enemy[1]))
+        self.rect = pygame.Rect(*pos, self.size_of_enemy[0], self.size_of_enemy[1])
+        self.x, self.y = pos
+
+    def update(self):
+        if pygame.sprite.spritecollideany(self, bullets_sprites):
+            self.count += 1
+            print(self.count)
+            if self.count == 1500:
+                self.kill()
+                return
 
 
 class Button(pygame.sprite.DirtySprite):
@@ -159,11 +246,6 @@ class Button(pygame.sprite.DirtySprite):
         surface.blit(self.image, (self.rect.x, self.rect.y))
 
         return action
-
-
-def terminate():
-    pygame.quit()
-    sys.exit()
 
 
 def start_screen(command='continue'):
@@ -215,8 +297,13 @@ def start_screen(command='continue'):
     pygame.quit()
 
 
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+
 def main():
-    tic = 0
+    global tic
     start_screen('start')
     clock = pygame.time.Clock()
     running = True
@@ -239,7 +326,9 @@ def main():
                     directions['mouse'] = False
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 3:
-                    Enemy_type_1((10, 10))
+                    Enemy_type_1((20, 20))
+                    Enemy_type_2((30, 30))
+                    Enemy_type_3((180, 150))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = True
@@ -281,21 +370,25 @@ def main():
                 if spr.y < 600:
                     spr.y += 10
         if directions['mouse']:
-            if tic % 10 == 0:
+            if tic % 1 == 0:
                 for spr in hero_sprites:
                     if spr.effect_bullet == 1:
                         Bullet((spr.x + 7, spr.y - 20))
                     elif spr.effect_bullet == 2:
-                        Bullet((spr.x - 3, spr.y - 20))
-                        Bullet((spr.x + 7, spr.y - 25))
-                        Bullet((spr.x + 17, spr.y - 21))
+                        Bullet((spr.x - 3, spr.y - 17))
+                        Bullet((spr.x + 7, spr.y - 28))
+                        Bullet((spr.x + 17, spr.y - 23))
         for spr in hero_sprites:
             if spr.y > 800:
                 spr.kill()
         for spr in bullets_sprites:
             if spr.y < 0:
                 spr.kill()
-
+        for bul in enemy_bullet_sprites:
+            if bul.y > 800:
+                bul.kill()
+            if bul.y < 0:
+                bul.kill()
         if tic % 2 == 0:
             stars_sprites.update()
         if tic % 500 == 0:
@@ -306,12 +399,18 @@ def main():
         stars_sprites.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
+        Enemy_sprites_2.draw(screen)
         bullets_sprites.draw(screen)
+        enemy_bullet_sprites.draw(screen)
 
         bullets_sprites.update()
-        hero_sprites.update(directions['down'] or directions['up'])
         if tic % 2 == 0:
-            Enemy_sprites.update()
+            stars_sprites.update()
+        Enemy_sprites_2.update()
+        enemy_bullet_sprites.update()
+        hero_sprites.update(directions['down'] or directions['up'])
+        Enemy_sprites.update()
+
         pygame.display.flip()
         clock.tick(fps)
 
