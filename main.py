@@ -17,7 +17,7 @@ pygame.init()
 size = width, height = 500, 700
 v = 50
 fps = 60
-tic = 0
+tic = 10
 buf_of_level = []
 screen = pygame.display.set_mode(size)
 count = 0
@@ -389,7 +389,6 @@ def main():
                 bul.kill()
             if bul.y < 0:
                 bul.kill()
-        tic += 1
         if tic % 2 == 0:
             stars_sprites.update()
         if tic % 500 == 0:
@@ -405,6 +404,8 @@ def main():
         enemy_bullet_sprites.draw(screen)
 
         bullets_sprites.update()
+        if tic % 2 == 0:
+            stars_sprites.update()
         Enemy_sprites.update()
         Enemy_sprites_2.update()
         enemy_bullet_sprites.update()
