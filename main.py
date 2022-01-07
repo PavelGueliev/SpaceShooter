@@ -18,6 +18,7 @@ size = width, height = 500, 700
 v = 50
 fps = 60
 tic = 0
+buf_of_level = []
 screen = pygame.display.set_mode(size)
 count = 0
 
@@ -308,12 +309,10 @@ def main():
     running = True
     Hero((250, 600))
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
-    tic = 10
     Border(5, 5, width - 5, 5)
     Border(5, height - 5, width - 5, height - 5)
     Border(5, 5, 5, height - 5)
     Border(width - 5, 5, width - 5, height - 5)
-
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
@@ -382,6 +381,7 @@ def main():
         for spr in hero_sprites:
             if spr.y > 800:
                 spr.kill()
+        for spr in bullets_sprites:
             if spr.y < 0:
                 spr.kill()
         for bul in enemy_bullet_sprites:
@@ -396,6 +396,7 @@ def main():
             for i in range(50):
                 Stars((randint(0, 500), randint(-700, 0)))
             tic = 0
+        tic += 1
         stars_sprites.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
@@ -408,9 +409,10 @@ def main():
         Enemy_sprites_2.update()
         enemy_bullet_sprites.update()
         hero_sprites.update(directions['down'] or directions['up'])
-
-        clock.tick(fps)
+        if tic % 2 == 0:
+            Enemy_sprites.update()
         pygame.display.flip()
+        clock.tick(fps)
 
 
 if __name__ == '__main__':
