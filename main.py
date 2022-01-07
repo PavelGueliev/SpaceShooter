@@ -4,8 +4,8 @@ from random import randint
 import pygame
 
 Enemy_sprites = pygame.sprite.Group()
-square_sprites = pygame.sprite.Group()
-platform_sprites = pygame.sprite.Group()
+hero_sprites = pygame.sprite.Group()
+bullets_sprites = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
@@ -15,16 +15,17 @@ pygame.init()
 size = width, height = 500, 700
 v = 50
 fps = 60
+tic = 0
 screen = pygame.display.set_mode(size)
 
 
-class Heroe(pygame.sprite.Sprite):
+class Hero(pygame.sprite.Sprite):
     size_square = 20
 
     def __init__(self, pos):
-        for spr in square_sprites:
+        for spr in hero_sprites:
             spr.kill()
-        super().__init__(square_sprites)
+        super().__init__(hero_sprites)
         self.image = pygame.Surface((self.size_square, self.size_square),
                                     pygame.SRCALPHA)
         pygame.draw.rect(self.image, pygame.Color("blue"),
@@ -34,25 +35,9 @@ class Heroe(pygame.sprite.Sprite):
         self.x, self.y = pos
         self.swim = self.y + 10
         self.flag_swim = 1
+        self.effect_bullet = 1
 
     def update(self, fly):
-        if not fly:
-            if self.flag_swim:
-                self.y += 1
-            else:
-                self.y -= 1
-            if self.swim == self.y:
-                self.flag_swim += 1
-                self.flag_swim %= 2
-                if self.flag_swim:
-                    self.swim = self.y + 10
-                else:
-                    self.swim = self.y - 10
-        else:
-            if self.flag_swim:
-                self.swim = self.y + 10
-            else:
-                self.swim = self.y - 10
         self.rect = pygame.Rect(self.x, self.y, self.size_square, self.size_square)
 
 
@@ -60,14 +45,32 @@ class Bullet(pygame.sprite.Sprite):
     size_platform = 5, 20
 
     def __init__(self, pos):
-        super().__init__(platform_sprites)
+        super().__init__(bullets_sprites)
         self.just_size = self.size_platform
         self.image = pygame.Surface((self.just_size[0], self.just_size[1]),
                                     pygame.SRCALPHA)
         pygame.draw.rect(self.image, pygame.Color("yellow"),
                          (0, 0, self.just_size[0], self.just_size[1]))
         self.rect = pygame.Rect(*pos, self.just_size[0], self.just_size[1])
-        self.x, self.y = pos[0], pos[1] - 100
+        self.x, self.y = pos[0], pos[1]
+
+    def update(self):
+        self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
+        self.y -= 10
+
+
+class Bullet_2(pygame.sprite.Sprite):
+    size_platform = 5, 20
+
+    def __init__(self, pos):
+        super().__init__(bullets_sprites)
+        self.just_size = self.size_platform
+        self.image = pygame.Surface((self.just_size[0], self.just_size[1]),
+                                    pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("yellow"),
+                         (0, 0, self.just_size[0], self.just_size[1]))
+        self.rect = pygame.Rect(*pos, self.just_size[0], self.just_size[1])
+        self.x, self.y = pos[0], pos[1]
 
     def update(self):
         self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
@@ -86,10 +89,11 @@ class Stars(pygame.sprite.DirtySprite):
                          (0, 0, self.just_size[0], self.just_size[1]))
         self.rect = pygame.Rect(*pos, self.just_size[0], self.just_size[1])
         self.x, self.y = pos[0], pos[1] - 100
+        self.u = randint(1, 8)
 
     def update(self):
         self.rect = pygame.Rect(self.x, int(self.y), self.just_size[0], self.just_size[1])
-        self.y += 1
+        self.y += self.u
         if self.rect.y > height:
             self.kill()
 
@@ -159,31 +163,37 @@ class Button(pygame.sprite.DirtySprite):
 
 def terminate():
     pygame.quit()
-    sys.exit
+    sys.exit()
 
 
-def start_screen():
-    start_img = pygame.image.load('box.png').convert_alpha()
-    exit_img = pygame.image.load('grass.png').convert_alpha()
-
+def start_screen(command='continue'):
+    global tic
+    start_img = pygame.image.load('Game.png').convert_alpha()
+    exit_img = pygame.image.load('Exit.png').convert_alpha()
+    credit_img = pygame.image.load('Credit.png').convert_alpha()
+    us_img = pygame.image.load('Us.png').convert_alpha()
+    reit_img = pygame.image.load('Reit.png').convert_alpha()
     # create button instances
     start_button = Button(100, 200, start_img, 0.8)
     exit_button = Button(100, 250, exit_img, 0.8)
+    credit_button = Button(100, 300, credit_img, 0.8)
+    reit_button = Button(100, 350, reit_img, 0.8)
+    us_button = Button(100, 400, us_img, 0.8)
 
     # game loop
-
-    for i in range(50):
-        Stars((randint(0, width), randint(-height, height)))
-
-    tic = 0
+    if command == 'start':
+        for i in range(50):
+            Stars((randint(0, width), randint(-height, height)))
     run = True
     clock = pygame.time.Clock()
     while run:
         screen.fill((0, 0, 0))
         for event in pygame.event.get():
-            # quit game
             if event.type == pygame.QUIT:
                 run = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE and command != 'start':
+                    return
         if start_button.draw(screen):
             return
         if exit_button.draw(screen):
@@ -206,14 +216,12 @@ def start_screen():
 
 
 def main():
-    start_screen()
+    tic = 0
+    start_screen('start')
     clock = pygame.time.Clock()
-    for i in range(100):
-        Stars((randint(0, 500), randint(-700, 700)))
     running = True
-    Heroe((250, 600))
+    Hero((250, 600))
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
-    tic = 10
     Border(5, 5, width - 5, 5)
     Border(5, height - 5, width - 5, height - 5)
     Border(5, 5, 5, height - 5)
@@ -257,48 +265,53 @@ def main():
                 if event.key == pygame.K_SPACE:
                     directions['mouse'] = False
         if directions['left']:
-            for spr in square_sprites:
+            for spr in hero_sprites:
                 if spr.x > 0:
                     spr.x -= 10
         if directions['right']:
-            for spr in square_sprites:
+            for spr in hero_sprites:
                 if spr.x < 480:
                     spr.x += 10
         if directions['up']:
-            for spr in square_sprites:
+            for spr in hero_sprites:
                 if spr.y > 10:
                     spr.y -= 10
         if directions['down']:
-            for spr in square_sprites:
+            for spr in hero_sprites:
                 if spr.y < 600:
                     spr.y += 10
         if directions['mouse']:
-            if tic % 6 == 0:
-                for spr in square_sprites:
-                    Bullet((spr.x + 7, spr.y - 20))
-        for spr in square_sprites:
+            if tic % 10 == 0:
+                for spr in hero_sprites:
+                    if spr.effect_bullet == 1:
+                        Bullet((spr.x + 7, spr.y - 20))
+                    elif spr.effect_bullet == 2:
+                        Bullet((spr.x - 3, spr.y - 20))
+                        Bullet((spr.x + 7, spr.y - 25))
+                        Bullet((spr.x + 17, spr.y - 21))
+        for spr in hero_sprites:
             if spr.y > 800:
                 spr.kill()
-        for spr in platform_sprites:
+        for spr in bullets_sprites:
             if spr.y < 0:
                 spr.kill()
-        tic += 1
+
         if tic % 2 == 0:
             stars_sprites.update()
         if tic % 500 == 0:
             for i in range(50):
                 Stars((randint(0, 500), randint(-700, 0)))
             tic = 0
+        tic += 1
         stars_sprites.draw(screen)
-        square_sprites.draw(screen)
+        hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
-        platform_sprites.draw(screen)
+        bullets_sprites.draw(screen)
 
-        platform_sprites.update()
-        square_sprites.update(directions['down'] or directions['up'])
-
-        Enemy_sprites.update()
-        clock.tick(fps)
+        bullets_sprites.update()
+        hero_sprites.update(directions['down'] or directions['up'])
+        if tic % 2 == 0:
+            Enemy_sprites.update()
         pygame.display.flip()
         clock.tick(fps)
 
