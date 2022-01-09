@@ -16,6 +16,7 @@ horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
 menu_sprites = pygame.sprite.Group()
+final_screen_sprites = pygame.sprite.Group()
 pygame.init()
 size = width, height = 1280, 720
 running = True
@@ -64,14 +65,11 @@ class Hero(pygame.sprite.Sprite):
         self.image = pygame.Surface((self.rect.width, self.rect.height),
                                     pygame.SRCALPHA)
 
-        pygame.draw.rect(self.image, pygame.Color("blue"),
-                         (0, 0, self.rect.width, self.rect.width))
-
         self.x, self.y = pos
         self.swim = self.y + 10
         self.flag_swim = 1
         self.effect_bullet = 2
-        self.hp = 30
+        self.hp = 3
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
@@ -93,7 +91,7 @@ class Hero(pygame.sprite.Sprite):
             self.hp -= 1
             print('hp', self.hp)
         if tic % 3 == 0:
-            self.cur_frame = (self.cur_frame + 1) % 4
+            self.cur_frame = (self.cur_frame + 1) % 3
             self.image = self.frames[self.cur_frame]
 
     def get_hp(self):
@@ -103,18 +101,17 @@ class Hero(pygame.sprite.Sprite):
 class Bullet(pygame.sprite.Sprite):
     size_platform = 5, 20
 
-    def __init__(self, pos):
+    def __init__(self, pos, bullet='data/bullet1.png'):
         super().__init__(bullets_sprites)
-        self.just_size = self.size_platform
-
-        self.image = load_image('bullet1.png', -1)
+        self.image2 = pygame.image.load(bullet).convert_alpha()
+        self.image2 = pygame.transform.scale(self.image2, (20, 40))
 
         self.rect = pygame.Rect(*pos,
-                                self.image.get_width(), self.image.get_height())
+                                self.image2.get_width(), self.image2.get_height())
 
         self.image = pygame.Surface((self.rect.width, self.rect.height),
                                     pygame.SRCALPHA)
-        self.image = load_image('bullet1.png', -1)
+        self.image = self.image2
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
@@ -270,8 +267,8 @@ class Enemy_type_3(pygame.sprite.Sprite):
 
 
 class Button(pygame.sprite.DirtySprite):
-    def __init__(self, x, y, image, scale):
-        super().__init__(menu_sprites)
+    def __init__(self, x, y, image, scale, sprites):
+        super().__init__(sprites)
         width = image.get_width()
         height = image.get_height()
         self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
@@ -307,11 +304,11 @@ def start_screen(command='continue'):
     reit_img = pygame.image.load('data/Reit.png').convert_alpha()
     splashscreen_img = pygame.image.load('data/SplashScreen.png').convert_alpha()
     # create button instances
-    start_button = Button(width * 0.4, height * 0.4, start_img, 1.5)
-    reit_button = Button(width * 0.4, height * 0.5, reit_img, 1.5)
-    credit_button = Button(width * 0.4, height * 0.6, credit_img, 1.5)
-    exit_button = Button(width * 0.4, height * 0.7, exit_img, 1.5)
-    Button(width * 0.26, height * 0.13, splashscreen_img, 2)
+    start_button = Button(width * 0.4, height * 0.4, start_img, 1.5, menu_sprites)
+    reit_button = Button(width * 0.4, height * 0.5, reit_img, 1.5, menu_sprites)
+    credit_button = Button(width * 0.4, height * 0.6, credit_img, 1.5, menu_sprites)
+    exit_button = Button(width * 0.4, height * 0.7, exit_img, 1.5, menu_sprites)
+    Button(width * 0.26, height * 0.13, splashscreen_img, 2, menu_sprites)
 
     # game loop
     if command == 'start':
@@ -329,14 +326,20 @@ def start_screen(command='continue'):
                 if event.key == pygame.K_ESCAPE and command != 'start':
                     return
         if start_button.draw(screen):
+            for i in menu_sprites:
+                i.kill()
             start_time = datetime.now()
             return
         if reit_button.draw(screen):
             start_time = datetime.now()
             return
         if credit_button.draw(screen):
-            start_time = datetime.now()
+            for i in menu_sprites:
+                i.kill()
+            run = False
+            credit_screen()
             return
+
         if exit_button.draw(screen):
             terminate()
             break
@@ -354,6 +357,136 @@ def start_screen(command='continue'):
         pygame.display.flip()
         clock.tick(60)
     pygame.quit()
+
+
+def credit_screen():
+    global tic, start_time, buf_of_level
+
+    exit_img = pygame.image.load('data/Exit.png').convert_alpha()
+
+    intro_text = '''Название проекта - Space Shooter
+Идея создания проекта:
+Мы решили испытать свои умения и создать игру - обычный Space Shooter,
+которых очень много на просторах интернета.
+Описание проекта:
+В нашей игре должен быть главный герой которым можно было бы управлять, в нашем случае это - Звёздный корабль.
+Как мы знаем в космосе много разных опасностей, и дабы добавить в наш игровой космос одну из опасностей,
+с которой мы сможем бороться, мы решили добавить врагов-иннопланетян, которые будут не одного типа,
+у кого-то есть способность стрелять, у кого-то способность совершать манёвры,
+а кто-то просто как пешка (бесполезные когда одни, но представляют опасность когда их много),
+чтобы вам было легче пройти игру Звёздный корабль мы оснастили оружием, которое можно улучшать за убийство врагов,
+помимо врагов мы решили добавить конечного босса, одолев которого вы пройдёте игру, однако не всё так легко,
+на пути к боссу вы сможете встретится с ещё одной проблемой, такой как пояс астероидов,
+где вам придется совершать манёвры чтобы выжить.'''.split('\n')
+
+    # create button instances
+    exit_button = Button(width * 0.8, height * 0.8, exit_img, 1.5, menu_sprites)
+
+    # game loop
+    run = True
+    clock = pygame.time.Clock()
+    while run:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                terminate()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+        if exit_button.draw(screen):
+            run = False
+            for i in menu_sprites:
+                i.kill()
+            start_screen()
+            return
+
+        if tic % 500 == 0:
+            for i in range(50):
+                Stars((randint(0, width), randint(-height, 0)))
+            tic = 0
+
+        font = pygame.font.Font(None, 30)
+        text_coord = 50
+
+        tic += 1
+        stars_sprites.draw(screen)
+        menu_sprites.draw(screen)
+        menu_sprites.update()
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('green'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        stars_sprites.update()
+
+        pygame.display.flip()
+        clock.tick(60)
+    pygame.quit()
+
+
+def final_screen(status='win', score=0):
+    global tic, start_time, buf_of_level
+
+    exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
+
+    intro_text = [f'Ваш счет: {str(score)}']
+
+
+    splashscreen_img = pygame.image.load('data/SplashScreen.png').convert_alpha()
+    # create button instances
+    exit_button = Button(width * 0.1, height * 0.1, exit_img, 1.5, final_screen_sprites)
+
+    # game loop
+    run = True
+    clock = pygame.time.Clock()
+    while run:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                terminate()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+        if exit_button.draw(screen):
+            run = False
+            start_screen()
+            return
+
+        if tic % 500 == 0:
+            for i in range(50):
+                Stars((randint(0, width), randint(-height, 0)))
+            tic = 0
+
+        font = pygame.font.Font(None, 30)
+        text_coord = 50
+
+        tic += 1
+        final_screen_sprites.draw(screen)
+        stars_sprites.draw(screen)
+
+        final_screen_sprites.update()
+        for line in intro_text:
+            string_rendered = font.render(line, 10, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.x = width // 2
+            intro_rect.y = height * 0.7
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+
+        stars_sprites.update()
+
+        pygame.display.flip()
+        clock.tick(60)
+    pygame.quit()
+
 
 
 def terminate():
@@ -487,8 +620,11 @@ def main():
         font = pygame.font.SysFont('serif', 24)
         img = font.render(f'Score: {score}', True, 'green')
         for i in hero_sprites:
-            img2 = font.render('HP:' + ''.join(['|' for i in range(i.get_hp())]), True, 'green')
-
+            img2 = font.render(f'{i.get_hp()}/100 HP:' + ''.join(['|' for i in range(i.get_hp())]), True, 'green')
+        for i in hero_sprites:
+            if i.get_hp() < 1:
+                final_screen()
+                i.hp = 3
         stars_sprites.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
@@ -508,9 +644,10 @@ def main():
         test_group.update()
 
         screen.blit(img, (width * 0.9, height * 0.1))
-        screen.blit(img2, (width * 0.1, height * 0.1))
+        screen.blit(img2, (width * 0.05, height * 0.1))
         pygame.display.flip()
         clock.tick(fps)
+    pygame.quit()
 
 
 if __name__ == '__main__':
