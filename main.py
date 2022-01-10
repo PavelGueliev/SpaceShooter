@@ -4,6 +4,7 @@ from random import randint
 from datetime import datetime
 import pygame
 import sqlite3
+import pygame_gui
 
 test_group = pygame.sprite.Group()
 
@@ -84,13 +85,10 @@ class Hero(pygame.sprite.Sprite):
         if tic % 15 == 0:
             if pygame.sprite.spritecollideany(self, Enemy_sprites):
                 self.hp -= 1
-                print('hp', self.hp)
             if pygame.sprite.spritecollideany(self, Enemy_sprites_2):
                 self.hp -= 1
-                print('hp', self.hp)
         if pygame.sprite.spritecollideany(self, enemy_bullet_sprites):
             self.hp -= 1
-            print('hp', self.hp)
         if tic % 3 == 0:
             self.cur_frame = (self.cur_frame + 1) % 3
             self.image = self.frames[self.cur_frame]
@@ -306,7 +304,7 @@ def start_screen(command='continue'):
     splashscreen_img = pygame.image.load('data/SplashScreen.png').convert_alpha()
     # create button instances
     start_button = Button(width * 0.4, height * 0.4, start_img, 1.5, menu_sprites)
-    reit_button = Button(width * 0.4, height * 0.5, reit_img, 1.5, menu_sprites)
+    rating_button = Button(width * 0.4, height * 0.5, reit_img, 1.5, menu_sprites)
     credit_button = Button(width * 0.4, height * 0.6, credit_img, 1.5, menu_sprites)
     exit_button = Button(width * 0.4, height * 0.7, exit_img, 1.5, menu_sprites)
     Button(width * 0.26, height * 0.13, splashscreen_img, 2, menu_sprites)
@@ -325,14 +323,18 @@ def start_screen(command='continue'):
                 terminate()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE and command != 'start':
+                    start_time = datetime.now()
                     return
         if start_button.draw(screen):
             for i in menu_sprites:
                 i.kill()
             start_time = datetime.now()
             return
-        if reit_button.draw(screen):
-            start_time = datetime.now()
+        if rating_button.draw(screen):
+            for i in menu_sprites:
+                i.kill()
+            run = False
+            rating_screen()
             return
         if credit_button.draw(screen):
             for i in menu_sprites:
@@ -356,7 +358,76 @@ def start_screen(command='continue'):
         stars_sprites.update()
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(fps)
+    pygame.quit()
+
+
+def rating_screen():
+    global tic, start_time, buf_of_level
+
+    exit_img = pygame.image.load('data/Exit.png').convert_alpha()
+
+    intro_text = ['ID      NAME     SCORE']
+
+    con = sqlite3.connect("data/Rating_Data.db")
+    cur = con.cursor()
+    result = cur.execute(f'SELECT * FROM rating').fetchall()
+
+    for i in result:
+        if i[0] < 10:
+            intro_text.append(f'{i[0]}       hohol        {i[2]}')
+        else:
+            intro_text.append(f'{i[0]}     {i[1]}        {i[2]}')
+
+
+
+    # create button instances
+    exit_button = Button(width * 0.8, height * 0.8, exit_img, 1.5, menu_sprites)
+
+    # game loop
+    run = True
+    clock = pygame.time.Clock()
+    while run:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                terminate()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+        if exit_button.draw(screen):
+            run = False
+            for i in menu_sprites:
+                i.kill()
+            start_screen()
+            return
+
+        if tic % 500 == 0:
+            for i in range(50):
+                Stars((randint(0, width), randint(-height, 0)))
+            tic = 0
+
+        font = pygame.font.Font(None, 30)
+        text_coord = height * 0.3
+
+        tic += 1
+        stars_sprites.draw(screen)
+        menu_sprites.draw(screen)
+        menu_sprites.update()
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('green'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = width * 0.4
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        stars_sprites.update()
+
+        pygame.display.flip()
+        clock.tick(fps)
     pygame.quit()
 
 
@@ -426,7 +497,7 @@ def credit_screen():
         stars_sprites.update()
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(fps)
     pygame.quit()
 
 
@@ -442,16 +513,23 @@ def final_screen(status='win', score=0):
     # game loop
     run = True
     clock = pygame.time.Clock()
+    if pygame.mouse.get_pressed()[0] == 0:
+        up = 1
+    else:
+        up = 0
     while run:
         screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 terminate()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return
-        if exit_button.draw(screen):
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
+                    up += 1
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    up += 1
+        if up > 1:
             run = False
             start_screen()
             return
@@ -478,13 +556,11 @@ def final_screen(status='win', score=0):
             text_coord += intro_rect.height
             screen.blit(string_rendered, intro_rect)
 
-
         stars_sprites.update()
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(fps)
     pygame.quit()
-
 
 
 def terminate():
@@ -511,7 +587,8 @@ def load_level(txt_file):
 
 def main():
     global tic, start_time
-    buf_of_level = load_level('1.txt')
+    level = '1.txt'
+    buf_of_level = load_level(level)
     start_screen('start')
     clock = pygame.time.Clock()
     running = True
@@ -621,6 +698,9 @@ def main():
             img2 = font.render(f'{i.get_hp()}/100 HP:' + ''.join(['|' for i in range(i.get_hp())]), True, 'green')
         for i in hero_sprites:
             if i.get_hp() < 1:
+                buf_of_level = load_level(level)
+                Hero((int(width * 0.5), int(height * 0.75)))
+                directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
                 final_screen()
                 i.hp = 3
         stars_sprites.draw(screen)
