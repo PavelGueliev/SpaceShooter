@@ -8,6 +8,7 @@ test_group = pygame.sprite.Group()
 Enemy_sprites = pygame.sprite.Group()
 Enemy_sprites_2 = pygame.sprite.Group()
 enemy_bullet_sprites = pygame.sprite.Group()
+explosion_sprites = pygame.sprite.Group()
 shield_sprite = pygame.sprite.Group()
 hero_sprites = pygame.sprite.Group()
 bullets_sprites = pygame.sprite.Group()
@@ -21,6 +22,8 @@ pygame.init()
 size = width, height = 1280, 720
 running = True
 shield_flag = False
+boss_death_flag = False
+bullet_splash_flag = False
 v = 50
 fps = 60
 tic = 10
@@ -70,7 +73,7 @@ class Hero(pygame.sprite.Sprite):
         self.swim = self.y + 10
         self.flag_swim = 1
         self.effect_bullet = 2
-        self.hp = 3
+        self.hp = 100
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
@@ -117,11 +120,18 @@ class Bullet(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
+        global bullet_splash_flag
         if pygame.sprite.spritecollideany(self, Enemy_sprites):
             self.kill()
+            bullet_splash_flag = True
+            Death(self.rect.x - 10, self.rect.y - 40)
+            bullet_splash_flag = False
             return
         elif pygame.sprite.spritecollideany(self, Enemy_sprites_2):
             self.kill()
+            bullet_splash_flag = True
+            Death(self.rect.x - 10, self.rect.y)
+            bullet_splash_flag = False
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -143,13 +153,20 @@ class Bullet_of_Enemy(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
+        global bullet_splash_flag
         if pygame.sprite.spritecollideany(self, hero_sprites):
             self.kill()
+            bullet_splash_flag = True
+            Death(self.rect.x - 10, self.rect.y + 20)
+            bullet_splash_flag = False
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y += 10
         if pygame.sprite.spritecollideany(self, shield_sprite):
             self.kill()
+            bullet_splash_flag = True
+            Death(self.rect.x - 10, self.rect.y + 20)
+            bullet_splash_flag = False
             return
 
 
@@ -246,9 +263,11 @@ class Enemy_type_1(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, bullets_sprites):
             score += 25
             self.kill()
+            Death(self.rect.x, self.rect.y)
             return
         if pygame.sprite.spritecollideany(self, shield_sprite):
             score += 25
+            Death(self.rect.x, self.rect.y)
             self.kill()
             return
         if tic % 2 == 0:
@@ -260,6 +279,42 @@ class Enemy_type_1(pygame.sprite.Sprite):
         if tic % 20 == 0:
             self.cur_frame = (self.cur_frame + 1) % 2
             self.image = self.frames[self.cur_frame]
+
+
+class Death(pygame.sprite.Sprite):
+    def __init__(self, x, y, sheet=load_image("explosion.png", -1), columns=2, rows=2):
+        global bullet_splash_flag, boss_death_flag
+        for spr in explosion_sprites:
+            spr.kill()
+        super().__init__(explosion_sprites)
+        self.frames = []
+        self.rand_int = randint(100, 500)
+        if boss_death_flag:
+            sheet = pygame.transform.scale(sheet, (self.rand_int, self.rand_int))
+        elif bullet_splash_flag:
+            sheet = pygame.transform.scale(sheet, (int(64 * 0.5), int(64 * 0.5)))
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = pygame.Rect(x, y, self.image.get_width(), self.image.get_height())
+        self.image = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        self.rect = pygame.Rect(x, y, self.image.get_width(), self.image.get_height())
+        self.hp = 4
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+
+    def update(self):
+        if tic % 5 == 0:
+            self.hp -= 1
+            self.cur_frame = (self.cur_frame + 1) % 4
+            self.image = self.frames[self.cur_frame]
+        if self.hp == 0:
+            self.kill()
 
 
 class Enemy_type_2(pygame.sprite.Sprite):
@@ -295,10 +350,12 @@ class Enemy_type_2(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, bullets_sprites):
             self.kill()
+            Death(self.rect.x, self.rect.y)
             score += 50
             return
         if pygame.sprite.spritecollideany(self, shield_sprite):
             score += 50
+            Death(self.rect.x, self.rect.y)
             self.kill()
             return
 
@@ -328,15 +385,18 @@ class Enemy_type_3(pygame.sprite.Sprite):
         self.swim = self.y + 25
 
     def update(self):
-        global score
-        global shield_flag
+        global score, shield_flag, boss_death_flag
         if tic % 4 == 0:
             self.levitation()
         if pygame.sprite.spritecollideany(self, bullets_sprites):
             self.count += 1
             if self.count == 150:
                 score += 500
+                boss_death_flag = True
+                self.rand_int = randint(80, 180)
+                Death(self.rect.x + self.rand_int, self.rect.y + self.rand_int - 80)
                 self.kill()
+                boss_death_flag = False
                 return
         if pygame.sprite.spritecollideany(self, shield_sprite):
             shield_flag = True
@@ -626,7 +686,7 @@ def main():
                 if event.button == 3:
                     Enemy_type_1((20, 20))
                     Enemy_type_2((30, 30))
-                    Enemy_type_3((180, 150))
+                    Enemy_type_3((450, 125))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     for spr in hero_sprites:
@@ -715,6 +775,7 @@ def main():
             if i.get_hp() < 1:
                 final_screen()
                 i.hp = 3
+
         stars_sprites.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
@@ -722,6 +783,7 @@ def main():
         bullets_sprites.draw(screen)
         enemy_bullet_sprites.draw(screen)
         shield_sprite.draw(screen)
+        explosion_sprites.draw(screen)
 
         bullets_sprites.update()
         if tic % 2 == 0:
@@ -731,6 +793,7 @@ def main():
         hero_sprites.update(directions['down'] or directions['up'])
         Enemy_sprites.update()
         shield_sprite.update()
+        explosion_sprites.update()
 
         test_group.draw(screen)
         test_group.update()
