@@ -502,10 +502,11 @@ def credit_screen():
 
 
 def final_screen(status='win', score=0):
-    global tic, buf_of_level
+    global tic,  buf_of_level
     exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
 
     intro_text = [f'Ваш счет: {str(score)}']
+
 
     # create button instances
     exit_button = Button(width * 0.1, height * 0.1, exit_img, 1.5, final_screen_sprites)
