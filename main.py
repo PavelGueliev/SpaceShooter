@@ -502,7 +502,7 @@ def credit_screen():
 
 
 def final_screen(status='win', score=0):
-    global tic, start_time, buf_of_level
+    global tic, buf_of_level
     exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
 
     intro_text = [f'Ваш счет: {str(score)}']
