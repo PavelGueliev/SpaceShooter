@@ -3,6 +3,7 @@ import sys
 from random import randint
 from datetime import datetime
 import pygame
+import sqlite3
 
 test_group = pygame.sprite.Group()
 
@@ -431,13 +432,10 @@ def credit_screen():
 
 def final_screen(status='win', score=0):
     global tic, start_time, buf_of_level
-
     exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
 
     intro_text = [f'Ваш счет: {str(score)}']
 
-
-    splashscreen_img = pygame.image.load('data/SplashScreen.png').convert_alpha()
     # create button instances
     exit_button = Button(width * 0.1, height * 0.1, exit_img, 1.5, final_screen_sprites)
 
@@ -513,7 +511,7 @@ def load_level(txt_file):
 
 def main():
     global tic, start_time
-    buf_of_level = [] #load_level('1.txt')
+    buf_of_level = load_level('1.txt')
     start_screen('start')
     clock = pygame.time.Clock()
     running = True
