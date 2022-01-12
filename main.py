@@ -85,6 +85,7 @@ class Hero(pygame.sprite.Sprite):
         self.flag_swim = 1
         self.effect_bullet = 1
         self.hp = 100
+        self.count_shield = 1
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
@@ -118,6 +119,12 @@ class Hero(pygame.sprite.Sprite):
 
     def get_hp(self):
         return self.hp
+
+    def give_shield(self, n):
+        self.count_shield += n
+
+    def get_shield(self):
+        return self.count_shield
 
 
 class Bullet1(pygame.sprite.Sprite):
@@ -307,6 +314,7 @@ class Updates(pygame.sprite.Sprite):
                     return
             elif self.upd == 'data/Shieldbonus.png' and pygame.sprite.spritecollideany(self, hero_sprites):
                 self.kill()
+                spr.give_shield(1)
                 return
             elif self.upd == 'data/life.png' and pygame.sprite.spritecollideany(self, hero_sprites):
                 self.kill()
@@ -563,7 +571,6 @@ class Death(pygame.sprite.Sprite):
             self.kill()
 
 
-
 class Button(pygame.sprite.DirtySprite):
     def __init__(self, x, y, image, scale, sprites):
         super().__init__(sprites)
@@ -614,7 +621,15 @@ def start_screen(command='continue'):
         relative_rect=pygame.Rect((width * 0.2, height * 0.41), (150, 25)), manager=manager,
     )
 
-    list_dir = os.listdir('levels')
+    list_dir = []
+    for i in os.listdir('levels'):
+        try:
+            if i[-4:] == '.txt':
+                list_dir += [i[:-4]]
+        except:
+            pass
+    list_dir += ['Survival']
+
     if level:
         lvl = pygame_gui.elements.ui_drop_down_menu.UIDropDownMenu(
             options_list=list_dir, starting_option=level,
@@ -667,7 +682,7 @@ def start_screen(command='continue'):
                 i.kill()
             start_time = datetime.now()
             name = entry.get_text()
-            level = lvl.selected_option
+            level = lvl.selected_option + '.txt'
             return
         if rating_button.draw(screen):
             for i in menu_sprites:
@@ -976,7 +991,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
     Hero((int(width * 0.5), int(height * 0.75)))
-    buf_of_level = load_level(level) + ['+']
+    buf_of_level = load_level('Survival.txt') + ['+']
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
     Border(5, 5, width - 5, 5)
     Border(5, height - 5, width - 5, height - 5)
@@ -1002,6 +1017,7 @@ def main():
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     for spr in hero_sprites:
                         Shield((spr.x - 20, spr.y - 20))
+                        spr.give_shield(-1)
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = True
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
@@ -1039,7 +1055,7 @@ def main():
                     spr.y -= 10
         if directions['down']:
             for spr in hero_sprites:
-                if spr.y < height - 25:
+                if spr.y < height - spr.rect.height:
                     spr.y += 10
         if directions['mouse']:
             if tic % 15 == 0:
@@ -1076,7 +1092,8 @@ def main():
                 start_time = datetime.now()
                 del buf_of_level[0]
         except:
-            pass
+            if buf_of_level[0] == '+' and level[:-4] == 'Survival':
+                buf_of_level = load_level('Survival.txt') + ['+']
 
         font = pygame.font.SysFont('serif', 24)
         img = font.render(f'Score: {score}', True, 'green')
@@ -1084,13 +1101,15 @@ def main():
             img2 = font.render(f'{i.get_hp()}/100 HP:' + ''.join(['|' for i in range(i.get_hp())]), True, 'green')
         for i in hero_sprites:
             if i.get_hp() < 1:
-                buf_of_level = load_level(level)
                 Hero((int(width * 0.5), int(height * 0.75)))
                 directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
                 final_screen()
+                buf_of_level = load_level(level)
                 i.hp = 100
                 i.effect_bullet = 1
-        # img3 = font.render(f'Shield:' + ''.join(['|' for j in range(i.get_hp())]), True, 'green')
+        for i in hero_sprites:
+            img3 = font.render(f'Shield: {i.get_shield()}', True, 'blue')
+
         stars_sprites.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
@@ -1118,6 +1137,7 @@ def main():
         test_group.update()
 
         screen.blit(img, (width * 0.9, height * 0.1))
+        screen.blit(img3, (width * 0.05, height * 0.2))
         screen.blit(img2, (width * 0.05, height * 0.1))
         pygame.display.flip()
         clock.tick(fps)
