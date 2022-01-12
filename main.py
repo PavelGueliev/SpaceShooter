@@ -12,6 +12,7 @@ test_group = pygame.sprite.Group()
 Enemy_sprites = pygame.sprite.Group()
 Enemy_sprites_2 = pygame.sprite.Group()
 Enemy_sprites_3 = pygame.sprite.Group()
+asteroid_sprites = pygame.sprite.Group()
 enemy_bullet_sprites = pygame.sprite.Group()
 explosion_sprites = pygame.sprite.Group()
 shield_sprite = pygame.sprite.Group()
@@ -108,6 +109,11 @@ class Hero(pygame.sprite.Sprite):
                 enemy_collide_flag = True
                 Death(self.rect.x + 5, self.rect.y + 5)
                 enemy_collide_flag = False
+            if pygame.sprite.spritecollideany(self, Enemy_sprites_3):
+                self.hp -= 1
+                enemy_collide_flag = True
+                Death(self.rect.x + 5, self.rect.y + 5)
+                enemy_collide_flag = False
         if pygame.sprite.spritecollideany(self, enemy_bullet_sprites):
             self.hp -= 1
             enemy_collide_flag = True
@@ -135,7 +141,7 @@ class Bullet1(pygame.sprite.Sprite):
         self.image2 = pygame.image.load(bullet).convert_alpha()
         self.image2 = pygame.transform.scale(self.image2, (10, 30))
 
-        self.rect = pygame.Rect(*pos,
+        self.rect = pygame.Rect(pos[0], pos[1] - 5,
                                 self.image2.get_width(), self.image2.get_height())
 
         self.image = pygame.Surface((self.rect.width, self.rect.height),
@@ -156,6 +162,9 @@ class Bullet1(pygame.sprite.Sprite):
             boss_splash_flag = True
             Death(self.rect.x - 8, self.rect.y - 40)
             boss_splash_flag = False
+            return
+        elif pygame.sprite.spritecollideany(self, asteroid_sprites):
+            self.kill()
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -169,7 +178,7 @@ class Bullet2(pygame.sprite.Sprite):
         self.image2 = pygame.image.load(bullet).convert_alpha()
         self.image2 = pygame.transform.scale(self.image2, (25, 40))
 
-        self.rect = pygame.Rect(*pos,
+        self.rect = pygame.Rect(pos[0], pos[1] - 5,
                                 self.image2.get_width(), self.image2.get_height())
 
         self.image = pygame.Surface((self.rect.width, self.rect.height),
@@ -190,6 +199,9 @@ class Bullet2(pygame.sprite.Sprite):
             boss_splash_flag = True
             Death(self.rect.x - 8, self.rect.y - 40)
             boss_splash_flag = False
+            return
+        elif pygame.sprite.spritecollideany(self, asteroid_sprites):
+            self.kill()
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -203,7 +215,7 @@ class Bullet3(pygame.sprite.Sprite):
         self.image2 = pygame.image.load(bullet).convert_alpha()
         self.image2 = pygame.transform.scale(self.image2, (35, 50))
 
-        self.rect = pygame.Rect(*pos,
+        self.rect = pygame.Rect(pos[0], pos[1] - 5,
                                 self.image2.get_width(), self.image2.get_height())
 
         self.image = pygame.Surface((self.rect.width, self.rect.height),
@@ -224,6 +236,9 @@ class Bullet3(pygame.sprite.Sprite):
             boss_splash_flag = True
             Death(self.rect.x - 8, self.rect.y - 40)
             boss_splash_flag = False
+            return
+        elif pygame.sprite.spritecollideany(self, asteroid_sprites):
+            self.kill()
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -379,6 +394,7 @@ class Enemy_type_1(pygame.sprite.Sprite):
         self.x, self.y = pos
         self.ux = 15
         self.uy = 15
+        self.start = False
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
@@ -405,13 +421,17 @@ class Enemy_type_1(pygame.sprite.Sprite):
             return
         if tic % 2 == 0:
             self.rect = self.rect.move(self.ux * 0.5, self.uy * 0.15)
-            if pygame.sprite.spritecollideany(self, horizontal_borders):
+            if pygame.sprite.spritecollideany(self, horizontal_borders) and self.start:
                 self.uy = -self.uy
             if pygame.sprite.spritecollideany(self, vertical_borders):
                 self.ux = -self.ux
         if tic % 20 == 0:
             self.cur_frame = (self.cur_frame + 1) % 2
             self.image = self.frames[self.cur_frame]
+        if self.rect.y > 40:
+            self.start = True
+        if self.rect.y > height:
+            self.kill()
 
 
 class Enemy_type_2(pygame.sprite.Sprite):
@@ -432,6 +452,7 @@ class Enemy_type_2(pygame.sprite.Sprite):
         self.x, self.y = pos
         self.ux = 15
         self.uy = 1
+        self.shoot = False
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
@@ -442,7 +463,7 @@ class Enemy_type_2(pygame.sprite.Sprite):
 
     def update(self):
         global score
-        if tic % 15 == 0:
+        if tic % 15 == 0 and self.shoot:
             Bullet_of_Enemy((self.rect.x + 15, self.rect.y + 25))
 
         if pygame.sprite.spritecollideany(self, bullets_sprites):
@@ -467,6 +488,10 @@ class Enemy_type_2(pygame.sprite.Sprite):
         if tic % 5 == 0:
             self.cur_frame = (self.cur_frame + 1) % 3
             self.image = self.frames[self.cur_frame]
+        if self.rect.y > 0:
+            self.shoot = True
+        if self.rect.y > height or self.rect.x > width:
+            self.kill()
 
 
 class Enemy_type_3(pygame.sprite.Sprite):
@@ -520,6 +545,44 @@ class Enemy_type_3(pygame.sprite.Sprite):
                 self.swim = self.y + 50
             else:
                 self.swim = self.y - 50
+
+
+class Asteroid(pygame.sprite.Sprite):
+    size_platform = 150, 150
+
+    def __init__(self):
+        self.count = count
+        super().__init__(asteroid_sprites)
+        scale = random.choices([0.05, 0.09])[0]
+        self.x, self.y = (randint(-width * 0.5, -width * 0.1), randint(-height * 2, height * 0.5))
+        self.image = pygame.transform.scale(pygame.image.load('data/asteroid.png'), (int(width * scale), int(height * scale)))
+        self.rect = pygame.Rect(self.x, self.y, self.image.get_width() * 0.7, self.image.get_height() * 0.7)
+        self.image = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        self.image = pygame.transform.scale(pygame.image.load('data/asteroid.png'), (int(width * scale), int(height * scale)))
+
+        self.u = 4
+
+        self.flag_swim = 1
+
+    def update(self):
+        if pygame.sprite.spritecollideany(self, hero_sprites):
+            for spr in hero_sprites:
+                spr.hp -= 10
+            self.kill()
+            Death(self.rect.x - 10, self.rect.y + 20)
+            return
+
+        if pygame.sprite.spritecollideany(self, shield_sprite):
+            self.kill()
+            Death(self.rect.x - 10, self.rect.y + 20)
+            return
+        if pygame.sprite.spritecollideany(self, bullets_sprites):
+            self.kill()
+            Death(self.rect.x - 10, self.rect.y + 20)
+            return
+        self.rect = self.rect.move(self.u, self.u)
+        if self.rect.y > height or self.rect.x > width:
+            self.kill()
 
 
 class Death(pygame.sprite.Sprite):
@@ -632,7 +695,7 @@ def start_screen(command='continue'):
 
     if level:
         lvl = pygame_gui.elements.ui_drop_down_menu.UIDropDownMenu(
-            options_list=list_dir, starting_option=level,
+            options_list=list_dir, starting_option=level[:-4],
             relative_rect=pygame.Rect((width * 0.2, height * 0.5), (200, 25)), manager=manager
         )
     else:
@@ -883,11 +946,15 @@ def credit_screen():
 
 def final_screen(status='win'):
     global tic,  buf_of_level, name, score
-    exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
+
+    if status == 'win':
+        exit_img = pygame.image.load('data/good_ending.png').convert_alpha()
+    else:
+        exit_img = pygame.image.load('data/gameoverscreen.png.png').convert_alpha()
     intro_text = [f'Ваш счет: {str(score)}']
 
     # create button instances
-    exit_button = Button(width * 0.1, height * 0.1, exit_img, 1.5, final_screen_sprites)
+    exit_button = Button(width * 0.1, 0, exit_img, 1.5, final_screen_sprites)
 
     # game loop
     run = True
@@ -984,6 +1051,27 @@ def load_level(txt_file):
     return lst
 
 
+def kill_all_sprites():
+    for i in Enemy_sprites:
+        i.kill()
+    for i in Enemy_sprites_2:
+        i.kill()
+    for i in Enemy_sprites_3:
+        i.kill()
+    for i in bullets_sprites:
+        i.kill()
+    for i in enemy_bullet_sprites:
+        i.kill()
+    for i in shield_sprite:
+        i.kill()
+    for i in explosion_sprites:
+        i.kill()
+    for i in updates_sprites:
+        i.kill()
+    for i in asteroid_sprites:
+        i.kill()
+
+
 def main():
     global tic, start_time, level
 
@@ -995,8 +1083,8 @@ def main():
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
     Border(5, 5, width - 5, 5)
     Border(5, height - 5, width - 5, height - 5)
-    Border(5, 5, 5, height - 5)
-    Border(width - 5, 5, width - 5, height - 5)
+    Border(5, -height, 5, height - 5)
+    Border(width - 5, -height, width - 5, height - 5)
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
@@ -1010,9 +1098,8 @@ def main():
                     directions['mouse'] = False
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 3:
-                    Enemy_type_1((20, 20))
-                    Enemy_type_2((30, 30))
-                    Enemy_type_3((450, 125))
+                    for i in range(10):
+                        Asteroid()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     for spr in hero_sprites:
@@ -1092,8 +1179,22 @@ def main():
                 start_time = datetime.now()
                 del buf_of_level[0]
         except:
-            if buf_of_level[0] == '+' and level[:-4] == 'Survival':
+            print(buf_of_level)
+            print(level[:-4])
+            print(len(Enemy_sprites_3))
+            print(len(Enemy_sprites))
+            print(len(Enemy_sprites_2))
+            if buf_of_level[0] == '+' and level[:-4] != 'Survival':
                 buf_of_level = load_level('Survival.txt') + ['+']
+            elif buf_of_level[0] == '+' and level[:-4] == 'Survival' \
+                    and len(Enemy_sprites_3) == 0 and len(Enemy_sprites) == 0 and len(Enemy_sprites_2) == 0:
+                buf_of_level = ['+']
+                final_screen()
+                Hero((int(width * 0.5), int(height * 0.75)))
+                directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
+                buf_of_level = load_level(level) + ['+']
+                i.hp = 100
+                i.effect_bullet = 1
 
         font = pygame.font.SysFont('serif', 24)
         img = font.render(f'Score: {score}', True, 'green')
@@ -1103,8 +1204,9 @@ def main():
             if i.get_hp() < 1:
                 Hero((int(width * 0.5), int(height * 0.75)))
                 directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
-                final_screen()
-                buf_of_level = load_level(level)
+                final_screen(status='lose')
+                kill_all_sprites()
+                buf_of_level = load_level(level) + ['+']
                 i.hp = 100
                 i.effect_bullet = 1
         for i in hero_sprites:
@@ -1120,10 +1222,13 @@ def main():
         shield_sprite.draw(screen)
         explosion_sprites.draw(screen)
         updates_sprites.draw(screen)
+        asteroid_sprites.draw(screen)
 
-        bullets_sprites.update()
         if tic % 2 == 0:
             stars_sprites.update()
+        if tic % 2 == 0:
+            asteroid_sprites.update()
+        bullets_sprites.update()
         Enemy_sprites_2.update()
         Enemy_sprites_3.update()
         enemy_bullet_sprites.update()
