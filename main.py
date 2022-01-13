@@ -950,7 +950,7 @@ def final_screen(status='win'):
     if status == 'win':
         exit_img = pygame.image.load('data/good_ending.png').convert_alpha()
     else:
-        exit_img = pygame.image.load('data/gameoverscreen.png.png').convert_alpha()
+        exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
     intro_text = [f'Ваш счет: {str(score)}']
 
     # create button instances
@@ -1079,7 +1079,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
     Hero((int(width * 0.5), int(height * 0.75)))
-    buf_of_level = load_level('Survival.txt') + ['+']
+    buf_of_level = load_level(level) + ['+']
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
     Border(5, 5, width - 5, 5)
     Border(5, height - 5, width - 5, height - 5)
@@ -1167,6 +1167,7 @@ def main():
             tic = 0
         tic += 1
         try:
+            print(level)
             if int((datetime.now() - start_time).total_seconds()) >= buf_of_level[0][0] and\
                     0 <= int((datetime.now() - start_time).total_seconds() * 100) % 100 < 2:
                 for i in range(buf_of_level[0][2]):
