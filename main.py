@@ -25,6 +25,7 @@ stars_sprites = pygame.sprite.Group()
 menu_sprites = pygame.sprite.Group()
 final_screen_sprites = pygame.sprite.Group()
 updates_sprites = pygame.sprite.Group()
+boss_shield_sprite = pygame.sprite.Group()
 pygame.init()
 size = width, height = 1280, 720
 running = True
@@ -34,6 +35,7 @@ boss_death_flag = False
 bullet_splash_flag = False
 enemy_collide_flag = False
 boss_splash_flag = False
+boss_shield_flag = False
 v = 50
 fps = 60
 tic = 10
@@ -44,6 +46,8 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Space shooter')
 pygame.display.set_icon(pygame.image.load('data/ico.png'))
 count = 0
+time_count = 0
+kill_count = 0
 updates_list = ['data/life.png', 'data/Bulletupdate.png', 'data/Shieldbonus.png']
 
 
@@ -150,21 +154,24 @@ class Bullet1(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
-        global boss_splash_flag
+        global boss_splash_flag, boss_shield_flag
         if pygame.sprite.spritecollideany(self, Enemy_sprites):
             self.kill()
             return
         elif pygame.sprite.spritecollideany(self, Enemy_sprites_2):
             self.kill()
             return
-        elif pygame.sprite.spritecollideany(self, Enemy_sprites_3):
+        elif pygame.sprite.spritecollideany(self, Enemy_sprites_3) and not boss_shield_flag:
             self.kill()
             boss_splash_flag = True
             Death(self.rect.x - 8, self.rect.y - 40)
             boss_splash_flag = False
             return
-        elif pygame.sprite.spritecollideany(self, asteroid_sprites):
+        elif pygame.sprite.spritecollideany(self, asteroid_sprites) or (pygame.sprite.spritecollideany(self, boss_shield_sprite) and boss_shield_flag):
             self.kill()
+            boss_splash_flag = True
+            Death(self.rect.x - 8, self.rect.y - 40)
+            boss_splash_flag = False
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -187,14 +194,14 @@ class Bullet2(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
-        global boss_splash_flag
+        global boss_splash_flag, boss_shield_flag
         if pygame.sprite.spritecollideany(self, Enemy_sprites):
             self.kill()
             return
         elif pygame.sprite.spritecollideany(self, Enemy_sprites_2):
             self.kill()
             return
-        elif pygame.sprite.spritecollideany(self, Enemy_sprites_3):
+        elif pygame.sprite.spritecollideany(self, Enemy_sprites_3) and not boss_shield_flag:
             self.kill()
             boss_splash_flag = True
             Death(self.rect.x - 8, self.rect.y - 40)
@@ -202,6 +209,15 @@ class Bullet2(pygame.sprite.Sprite):
             return
         elif pygame.sprite.spritecollideany(self, asteroid_sprites):
             self.kill()
+            boss_splash_flag = True
+            Death(self.rect.x - 8, self.rect.y - 40)
+            boss_splash_flag = False
+            return
+        elif pygame.sprite.spritecollideany(self, boss_shield_sprite) and boss_shield_flag:
+            self.kill()
+            boss_splash_flag = True
+            Death(self.rect.x - 8, self.rect.y - 40)
+            boss_splash_flag = False
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -224,14 +240,14 @@ class Bullet3(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
-        global boss_splash_flag
+        global boss_splash_flag, boss_shield_flag
         if pygame.sprite.spritecollideany(self, Enemy_sprites):
             self.kill()
             return
         elif pygame.sprite.spritecollideany(self, Enemy_sprites_2):
             self.kill()
             return
-        elif pygame.sprite.spritecollideany(self, Enemy_sprites_3):
+        elif pygame.sprite.spritecollideany(self, Enemy_sprites_3) and not boss_shield_flag:
             self.kill()
             boss_splash_flag = True
             Death(self.rect.x - 8, self.rect.y - 40)
@@ -239,6 +255,12 @@ class Bullet3(pygame.sprite.Sprite):
             return
         elif pygame.sprite.spritecollideany(self, asteroid_sprites):
             self.kill()
+            return
+        elif pygame.sprite.spritecollideany(self, boss_shield_sprite) and boss_shield_flag:
+            self.kill()
+            boss_splash_flag = True
+            Death(self.rect.x - 8, self.rect.y - 40)
+            boss_splash_flag = False
             return
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
         self.y -= 10
@@ -277,6 +299,34 @@ class Bullet_of_Enemy(pygame.sprite.Sprite):
             return
 
 
+class Bullets_of_Boss(pygame.sprite.Sprite):
+    def __init__(self, pos, bullet='data/enemybullet.png'):
+        super().__init__(enemy_bullet_sprites)
+        self.image2 = pygame.image.load(bullet).convert_alpha()
+        self.image2 = pygame.transform.scale(self.image2, (30, 30))
+        self.rect = pygame.Rect(*pos,
+                                self.image2.get_width(), self.image2.get_height())
+
+        self.image = pygame.Surface((self.rect.width, self.rect.height),
+                                    pygame.SRCALPHA)
+        self.image = self.image2
+        self.x, self.y = pos[0], pos[1]
+        self.ux = 15
+        self.uy = 1
+
+    def update(self):
+        global bullet_splash_flag
+        if pygame.sprite.spritecollideany(self, hero_sprites) or pygame.sprite.spritecollideany(self, shield_sprite):
+            self.kill()
+            bullet_splash_flag = True
+            Death(self.rect.x - 10, self.rect.y + 20)
+            bullet_splash_flag = False
+            return
+        self.y += 10
+        self.rect = self.rect.move(self.ux * 0.15, self.uy)
+        self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
+
+
 class Shield(pygame.sprite.Sprite):
     def __init__(self, pos, shield='data/shield.png'):
         for spr in shield_sprite:
@@ -294,14 +344,44 @@ class Shield(pygame.sprite.Sprite):
         self.x, self.y = pos[0], pos[1]
 
     def update(self):
-        global shield_flag
-        if tic % 500 == 0:
+        global shield_flag, time_count
+        if time_count == 1000:
             self.kill()
             shield_flag = False
+            time_count = 0
         else:
             for spr in hero_sprites:
                 Shield((spr.x - 20, spr.y - 20))
                 shield_flag = True
+                time_count += 1
+        self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
+
+
+class BossShield(pygame.sprite.Sprite):
+    def __init__(self, pos, shield='data/BossShieldPhase1.png'):
+        for spr in boss_shield_sprite:
+            spr.kill()
+        super().__init__(boss_shield_sprite)
+        self.image2 = pygame.image.load(shield).convert_alpha()
+        self.image2 = pygame.transform.scale(self.image2, (450, 310))
+
+        self.rect = pygame.Rect(*pos,
+                                self.image2.get_width(), self.image2.get_height())
+
+        self.image = pygame.Surface((self.rect.width, self.rect.height),
+                                    pygame.SRCALPHA)
+        self.image = self.image2
+        self.x, self.y = pos[0], pos[1]
+
+    def update(self):
+        global boss_shield_flag, boss_death_flag, kill_count
+        if kill_count == 24:
+            self.kill()
+            boss_shield_flag = False
+        if pygame.sprite.spritecollideany(self, bullets_sprites) and boss_shield_flag:
+            for spr in Enemy_sprites_3:
+                self.kill()
+                BossShield((spr.rect.x - 30, spr.rect.y - 20), 'data/BossShieldPhase2_2.png')
         self.rect = pygame.Rect(self.x, int(self.y), self.rect.width, self.rect.height)
 
 
@@ -379,7 +459,7 @@ class Border(pygame.sprite.Sprite):
 class Enemy_type_1(pygame.sprite.Sprite):
     size_platform = 25, 25
 
-    def __init__(self, pos, sheet=load_image("enemytype1pix.png", -1), columns=2, rows=1):
+    def __init__(self, pos, ux=15, uy=15, sheet=load_image("enemytype1pix.png", -1), columns=2, rows=1):
         super().__init__(Enemy_sprites)
         self.frames = []
         self.cut_sheet(sheet, columns, rows)
@@ -512,25 +592,45 @@ class Enemy_type_3(pygame.sprite.Sprite):
         self.swim = self.y + 25
 
     def update(self):
-        global score, shield_flag, boss_death_flag
+        global score, boss_death_flag, boss_shield_flag, kill_count
+        if tic % 10 == 0 and not boss_shield_flag:
+            Bullets_of_Boss((self.rect.x + 180, self.rect.y + 80))
+        if tic % 30 == 0 and not boss_shield_flag:
+            Bullets_of_Boss((self.rect.x + 100, self.rect.y + 80))
+            Bullets_of_Boss((self.rect.x + 260, self.rect.y + 80))
+        if tic % 50 == 0 and not boss_shield_flag:
+            Bullets_of_Boss((self.rect.x + 60, self.rect.y + 80))
+            Bullets_of_Boss((self.rect.x + 300, self.rect.y + 80))
+        if tic % 260 == 0 and not boss_shield_flag:
+            for i in range(20, 321, 20):
+                Bullets_of_Boss((self.rect.x + i, self.rect.y + 80))
         if tic % 4 == 0:
             self.levitation()
-        for spr in hero_sprites:
-            if pygame.sprite.spritecollideany(self, bullets_sprites) and spr.effect_bullet == 1:
-                self.count += 1
-            elif pygame.sprite.spritecollideany(self, bullets_sprites) and spr.effect_bullet == 2:
-                self.count += 2
-            elif pygame.sprite.spritecollideany(self, bullets_sprites) and spr.effect_bullet == 3:
-                self.count += 3
+        if not boss_shield_flag:
+            for spr in hero_sprites:
+                if pygame.sprite.spritecollideany(self, bullets_sprites) and spr.effect_bullet == 1:
+                    self.count += 1
+                elif pygame.sprite.spritecollideany(self, bullets_sprites) and spr.effect_bullet == 2:
+                    self.count += 2
+                elif pygame.sprite.spritecollideany(self, bullets_sprites) and spr.effect_bullet == 3:
+                    self.count += 3
+        elif boss_shield_flag and tic % 65 == 0:
+            Enemy_type_1((self.rect.x + 100, self.rect.y))
+            Enemy_type_1((self.rect.x, self.rect.y), -15)
+            Enemy_type_2(pos=(self.rect.x + 100, self.rect.y))
+            Enemy_type_2(pos=(self.rect.x, self.rect.y))
+            kill_count += 4
         if self.count >= 150:
             score += 500
             boss_death_flag = True
             Death(self.rect.x + 80, self.rect.y + 80)
             self.kill()
+            kill_count = 0
             boss_death_flag = False
             return
-        if pygame.sprite.spritecollideany(self, shield_sprite):
-            shield_flag = True
+        if self.count >= 75:
+            boss_shield_flag = True
+            BossShield((self.rect.x - 30, self.rect.y - 20), 'data/BossShieldPhase1.png')
         self.rect = pygame.Rect(self.x, self.y, self.rect.width, self.rect.height)
 
     def levitation(self):
@@ -545,6 +645,9 @@ class Enemy_type_3(pygame.sprite.Sprite):
                 self.swim = self.y + 50
             else:
                 self.swim = self.y - 50
+
+    def get_hp(self):
+        return 150 - self.count
 
 
 class Asteroid(pygame.sprite.Sprite):
@@ -565,6 +668,7 @@ class Asteroid(pygame.sprite.Sprite):
         self.flag_swim = 1
 
     def update(self):
+        global score
         if pygame.sprite.spritecollideany(self, hero_sprites):
             for spr in hero_sprites:
                 spr.hp -= 10
@@ -575,10 +679,12 @@ class Asteroid(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, shield_sprite):
             self.kill()
             Death(self.rect.x - 10, self.rect.y + 20)
+            score += 5
             return
         if pygame.sprite.spritecollideany(self, bullets_sprites):
             self.kill()
             Death(self.rect.x - 10, self.rect.y + 20)
+            score += 10
             return
         self.rect = self.rect.move(self.u, self.u)
         if self.rect.y > height or self.rect.x > width:
@@ -587,7 +693,7 @@ class Asteroid(pygame.sprite.Sprite):
 
 class Death(pygame.sprite.Sprite):
     def __init__(self, x, y, sheet=load_image("explosion.png", -1), columns=2, rows=2):
-        global bullet_splash_flag, boss_death_flag, enemy_collide_flag, boss_splash_flag
+        global bullet_splash_flag, boss_death_flag, enemy_collide_flag, boss_splash_flag, boss_shield_flag
         for spr in explosion_sprites:
             spr.kill()
         super().__init__(explosion_sprites)
@@ -595,11 +701,11 @@ class Death(pygame.sprite.Sprite):
         for spr in hero_sprites:
             if boss_death_flag:
                 sheet = pygame.transform.scale(sheet, (500, 500))
-            elif boss_splash_flag and spr.effect_bullet == 1:
+            elif (boss_splash_flag or boss_shield_flag) and spr.effect_bullet == 1:
                 sheet = pygame.transform.scale(sheet, (int(64 * 0.5), int(64 * 0.5)))
-            elif boss_splash_flag and spr.effect_bullet == 2:
+            elif (boss_splash_flag or boss_shield_flag) and spr.effect_bullet == 2:
                 sheet = pygame.transform.scale(sheet, (int(64 * 1.5), int(64 * 0.5)))
-            elif boss_splash_flag and spr.effect_bullet == 3:
+            elif (boss_splash_flag or boss_shield_flag) and spr.effect_bullet == 3:
                 sheet = pygame.transform.scale(sheet, (int(64 * 3), int(64 * 1.5)))
             elif bullet_splash_flag:
                 sheet = pygame.transform.scale(sheet, (int(64 * 0.5), int(64 * 0.5)))
@@ -622,11 +728,7 @@ class Death(pygame.sprite.Sprite):
 
     def update(self):
         global boss_death_flag
-        if tic % 5 == 0 and not boss_death_flag:
-            self.hp -= 1
-            self.cur_frame = (self.cur_frame + 1) % 4
-            self.image = self.frames[self.cur_frame]
-        if tic % 10 == 0 and boss_death_flag:
+        if tic % 5 == 0:
             self.hp -= 1
             self.cur_frame = (self.cur_frame + 1) % 4
             self.image = self.frames[self.cur_frame]
@@ -691,7 +793,6 @@ def start_screen(command='continue'):
                 list_dir += [i[:-4]]
         except:
             pass
-    list_dir += ['Survival']
 
     if level:
         lvl = pygame_gui.elements.ui_drop_down_menu.UIDropDownMenu(
@@ -951,7 +1052,7 @@ def final_screen(status='win'):
         exit_img = pygame.image.load('data/good_ending.png').convert_alpha()
     else:
         exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
-    intro_text = [f'Ваш счет: {str(score)}']
+    intro_text = f'Ваш счет: {str(score)}'
 
     # create button instances
     exit_button = Button(width * 0.1, 0, exit_img, 1.5, final_screen_sprites)
@@ -988,7 +1089,7 @@ def final_screen(status='win'):
                 Stars((randint(0, width), randint(-height, 0)))
             tic = 0
 
-        font = pygame.font.Font(None, 30)
+        font = pygame.font.Font(None, 100)
         text_coord = 50
 
         tic += 1
@@ -996,14 +1097,8 @@ def final_screen(status='win'):
         stars_sprites.draw(screen)
 
         final_screen_sprites.update()
-        for line in intro_text:
-            string_rendered = font.render(line, 10, pygame.Color('white'))
-            intro_rect = string_rendered.get_rect()
-            text_coord += 10
-            intro_rect.x = width * 0.4
-            intro_rect.y = height * 0.7
-            text_coord += intro_rect.height
-            screen.blit(string_rendered, intro_rect)
+        img = font.render(intro_text, True, 'white')
+        screen.blit(img, (width * 0.3, height * 0.6))
 
         stars_sprites.update()
 
@@ -1073,7 +1168,7 @@ def kill_all_sprites():
 
 
 def main():
-    global tic, start_time, level
+    global tic, start_time, level, shield_flag, time_count
 
     start_screen('start')
     clock = pygame.time.Clock()
@@ -1103,8 +1198,11 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     for spr in hero_sprites:
-                        Shield((spr.x - 20, spr.y - 20))
-                        spr.give_shield(-1)
+                        if spr.get_shield() > 0:
+                            Shield((spr.x - 20, spr.y - 20))
+                            shield_flag = True
+                            time_count += 1
+                            spr.give_shield(-1)
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = True
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
@@ -1167,7 +1265,6 @@ def main():
             tic = 0
         tic += 1
         try:
-            print(level)
             if int((datetime.now() - start_time).total_seconds()) >= buf_of_level[0][0] and\
                     0 <= int((datetime.now() - start_time).total_seconds() * 100) % 100 < 2:
                 for i in range(buf_of_level[0][2]):
@@ -1177,18 +1274,17 @@ def main():
                         Enemy_type_2(buf_of_level[0][3][i])
                     elif buf_of_level[0][1] == 3:
                         Enemy_type_3(buf_of_level[0][3][i])
+                    elif buf_of_level[0][1] == 4:
+                        for i in range(25):
+                            Asteroid()
                 start_time = datetime.now()
                 del buf_of_level[0]
         except:
-            print(buf_of_level)
-            print(level[:-4])
-            print(len(Enemy_sprites_3))
-            print(len(Enemy_sprites))
-            print(len(Enemy_sprites_2))
-            if buf_of_level[0] == '+' and level[:-4] != 'Survival':
+            if buf_of_level[0] == '+' and level[:-4] == 'Survival':
                 buf_of_level = load_level('Survival.txt') + ['+']
-            elif buf_of_level[0] == '+' and level[:-4] == 'Survival' \
-                    and len(Enemy_sprites_3) == 0 and len(Enemy_sprites) == 0 and len(Enemy_sprites_2) == 0:
+            elif buf_of_level[0] == '+' and level[:-4] != 'Survival' \
+                    and len(Enemy_sprites_3) == 0 and len(Enemy_sprites) == 0 \
+                    and len(Enemy_sprites_2) == 0 and len(asteroid_sprites) == 0:
                 buf_of_level = ['+']
                 final_screen()
                 Hero((int(width * 0.5), int(height * 0.75)))
@@ -1214,6 +1310,8 @@ def main():
             img3 = font.render(f'Shield: {i.get_shield()}', True, 'blue')
 
         stars_sprites.draw(screen)
+        shield_sprite.draw(screen)
+        boss_shield_sprite.draw(screen)
         hero_sprites.draw(screen)
         Enemy_sprites.draw(screen)
         Enemy_sprites_2.draw(screen)
@@ -1229,6 +1327,7 @@ def main():
             stars_sprites.update()
         if tic % 2 == 0:
             asteroid_sprites.update()
+
         bullets_sprites.update()
         Enemy_sprites_2.update()
         Enemy_sprites_3.update()
@@ -1238,13 +1337,20 @@ def main():
         shield_sprite.update()
         explosion_sprites.update()
         updates_sprites.update()
+        boss_shield_sprite.update()
 
         test_group.draw(screen)
         test_group.update()
 
         screen.blit(img, (width * 0.9, height * 0.1))
+        screen.blit(img2, (width * 0.05, height * 0.1))
         screen.blit(img3, (width * 0.05, height * 0.2))
         screen.blit(img2, (width * 0.05, height * 0.1))
+        if len(Enemy_sprites_3) >= 1:
+            for i in Enemy_sprites_3:
+                img4 = font.render(f'{i.get_hp()}/150 HP:' + ''.join(['|' for i in range(i.get_hp())]), True, 'red')
+            screen.blit(img4, (width * 0.2, height * 0.9))
+
         pygame.display.flip()
         clock.tick(fps)
     pygame.quit()
