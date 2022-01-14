@@ -271,6 +271,9 @@ class Bullet_of_Enemy(pygame.sprite.Sprite):
 
     def __init__(self, pos, bullet='data/enemybullet.png'):
         super().__init__(enemy_bullet_sprites)
+        self.sound = pygame.mixer.Sound('data/Herobullet.mp3')
+        pygame.mixer.Sound.set_volume(self.sound, 0.1)
+        self.sound.play()
         self.image2 = pygame.image.load(bullet).convert_alpha()
         self.image2 = pygame.transform.scale(self.image2, (10, 30))
         self.rect = pygame.Rect(*pos,
@@ -302,6 +305,9 @@ class Bullet_of_Enemy(pygame.sprite.Sprite):
 class Bullets_of_Boss(pygame.sprite.Sprite):
     def __init__(self, pos, bullet='data/enemybullet.png'):
         super().__init__(enemy_bullet_sprites)
+        self.sound = pygame.mixer.Sound('data/Herobullet.mp3')
+        pygame.mixer.Sound.set_volume(self.sound, 0.1)
+        self.sound.play()
         self.image2 = pygame.image.load(bullet).convert_alpha()
         self.image2 = pygame.transform.scale(self.image2, (30, 30))
         self.rect = pygame.Rect(*pos,
@@ -349,6 +355,8 @@ class Shield(pygame.sprite.Sprite):
             self.kill()
             shield_flag = False
             time_count = 0
+            sound = pygame.mixer.Sound('data/Shieldpassive.mp3')
+            sound.play()
         else:
             for spr in hero_sprites:
                 Shield((spr.x - 20, spr.y - 20))
@@ -378,6 +386,8 @@ class BossShield(pygame.sprite.Sprite):
         if kill_count == 24:
             self.kill()
             boss_shield_flag = False
+            sound = pygame.mixer.Sound('data/Shieldpassive.mp3')
+            sound.play()
         if pygame.sprite.spritecollideany(self, bullets_sprites) and boss_shield_flag:
             for spr in Enemy_sprites_3:
                 self.kill()
@@ -626,12 +636,15 @@ class Enemy_type_3(pygame.sprite.Sprite):
             boss_death_flag = True
             Death(self.rect.x + 80, self.rect.y + 80)
             self.kill()
+            pygame.mixer.music.stop()
             kill_count = 0
             boss_death_flag = False
             return
         if self.count >= 75:
             boss_shield_flag = True
             BossShield((self.rect.x - 30, self.rect.y - 20), 'data/BossShieldPhase1.png')
+            sound = pygame.mixer.Sound('data/Shieldactive.mp3')
+            sound.play()
         self.rect = pygame.Rect(self.x, self.y, self.rect.width, self.rect.height)
 
     def levitation(self):
@@ -708,6 +721,9 @@ class Death(pygame.sprite.Sprite):
         for spr in explosion_sprites:
             spr.kill()
         super().__init__(explosion_sprites)
+        sound = pygame.mixer.Sound('data/Hit1.mp3')
+        pygame.mixer.Sound.set_volume(sound, 0.1)
+        sound.play()
         self.frames = []
         for spr in hero_sprites:
             if boss_death_flag:
@@ -780,6 +796,9 @@ class Button(pygame.sprite.DirtySprite):
 def start_screen(command='continue'):
     global tic, start_time, name, level
 
+    pygame.mixer.music.load('data/Mainmenu.mp3')
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play()
     start_img = pygame.image.load('data/Game.png').convert_alpha()
     exit_img = pygame.image.load('data/Exit.png').convert_alpha()
     credit_img = pygame.image.load('data/Credit.png').convert_alpha()
@@ -987,7 +1006,8 @@ def credit_screen():
 
     exit_img = pygame.image.load('data/Exit.png').convert_alpha()
 
-    intro_text = '''Название проекта - Space Shooter
+    intro_text = '''Разработчики: Хакназаров Илья и Гулиев Павел
+Название проекта - Space Shooter
 Идея создания проекта:
 Мы решили испытать свои умения и создать игру - обычный Space Shooter,
 которых очень много на просторах интернета.
@@ -996,11 +1016,17 @@ def credit_screen():
 Как мы знаем в космосе много разных опасностей, и дабы добавить в наш игровой космос одну из опасностей,
 с которой мы сможем бороться, мы решили добавить врагов-иннопланетян, которые будут не одного типа,
 у кого-то есть способность стрелять, у кого-то способность совершать манёвры,
-а кто-то просто как пешка (бесполезные когда одни, но представляют опасность когда их много),
 чтобы вам было легче пройти игру Звёздный корабль мы оснастили оружием, которое можно улучшать за убийство врагов,
-помимо врагов мы решили добавить конечного босса, одолев которого вы пройдёте игру, однако не всё так легко,
+также мы решили добавить щит, который увеличит ваши шансы на выживание, помимо врагов мы решили добавить
+конечного босса, одолев которого вы пройдёте игру, однако не всё так легко,
 на пути к боссу вы сможете встретится с ещё одной проблемой, такой как пояс астероидов,
-где вам придется совершать манёвры чтобы выжить.'''.split('\n')
+где вам придется совершать манёвры чтобы выжить.
+
+Управление:
+WASD - управление персонажем
+ЛКМ(Зажатие)/Пробел(Зажатие) - стрельба
+LShift/RShift - активирование щита
+'''.split('\n')
 
     # create button instances
     exit_button = Button(width * 0.8, height * 0.8, exit_img, 1.5, menu_sprites)
@@ -1061,8 +1087,12 @@ def final_screen(status='win'):
 
     if status == 'win':
         exit_img = pygame.image.load('data/good_ending.png').convert_alpha()
+        pygame.mixer.music.load('data/Goodend.mp3')
+        pygame.mixer.music.play()
     else:
         exit_img = pygame.image.load('data/gameoverscreen.png').convert_alpha()
+        pygame.mixer.music.load('data/gameover.mp3')
+        pygame.mixer.music.play()
     intro_text = f'Ваш счет: {str(score)}'
 
     # create button instances
@@ -1184,6 +1214,10 @@ def main():
     start_screen('start')
     clock = pygame.time.Clock()
     running = True
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load('data/Startlevel.mp3')
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play()
     Hero((int(width * 0.5), int(height * 0.75)))
     buf_of_level = load_level(level) + ['+']
     directions = {"right": False, "left": False, 'mouse': False, 'down': False, 'up': False}
@@ -1196,6 +1230,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                pygame.mixer.music.pause()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     directions['mouse'] = True
@@ -1204,6 +1239,11 @@ def main():
                     directions['mouse'] = False
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 3:
+                    Enemy_type_3((500, 300))
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.load('data/Bossbatle.mp3')
+                    pygame.mixer.music.set_volume(0.5)
+                    pygame.mixer.music.play()
                     for i in range(10):
                         Asteroid()
             if event.type == pygame.KEYDOWN:
@@ -1214,6 +1254,9 @@ def main():
                             shield_flag = True
                             time_count += 1
                             spr.give_shield(-1)
+
+                            sound = pygame.mixer.Sound('data/Shieldactive.mp3')
+                            sound.play()
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = True
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
@@ -1226,6 +1269,10 @@ def main():
                     directions['mouse'] = True
                 if event.key == pygame.K_ESCAPE:
                     start_screen()
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.load('data/Startlevel.mp3')
+                    pygame.mixer.music.set_volume(0.5)
+                    pygame.mixer.music.play()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     directions['right'] = False
@@ -1258,10 +1305,19 @@ def main():
                 for spr in hero_sprites:
                     if spr.effect_bullet == 1:
                         Bullet1((spr.x + 10, spr.y - 20))
+                        sound = pygame.mixer.Sound('data/Herobullet.mp3')
+                        pygame.mixer.Sound.set_volume(sound, 0.1)
+                        sound.play()
                     elif spr.effect_bullet == 2:
                         Bullet2((spr.x + 4, spr.y - 25))
+                        sound = pygame.mixer.Sound('data/Herobullet.mp3')
+                        pygame.mixer.Sound.set_volume(sound, 0.2)
+                        sound.play()
                     elif spr.effect_bullet == 3:
                         Bullet3((spr.x - 1, spr.y - 40))
+                        sound = pygame.mixer.Sound('data/Herobullet.mp3')
+                        pygame.mixer.Sound.set_volume(sound, 0.3)
+                        sound.play()
         for spr in bullets_sprites:
             if spr.y < 0:
                 spr.kill()
@@ -1285,6 +1341,11 @@ def main():
                         Enemy_type_2(buf_of_level[0][3][i])
                     elif buf_of_level[0][1] == 3:
                         Enemy_type_3(buf_of_level[0][3][i])
+                        if len(Enemy_sprites_3) == 1:
+                            pygame.mixer.music.stop()
+                            pygame.mixer.music.load('data/Bossbatle.mp3')
+                            pygame.mixer.music.set_volume(0.5)
+                            pygame.mixer.music.play()
                     elif buf_of_level[0][1] == 4:
                         for i in range(25):
                             Asteroid()
