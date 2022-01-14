@@ -590,6 +590,7 @@ class Enemy_type_3(pygame.sprite.Sprite):
         self.x, self.y = pos
         self.flag_swim = 1
         self.swim = self.y + 25
+        self.pos_x = True
 
     def update(self):
         global score, boss_death_flag, boss_shield_flag, kill_count
@@ -646,6 +647,16 @@ class Enemy_type_3(pygame.sprite.Sprite):
             else:
                 self.swim = self.y - 50
 
+    def mons(self):
+        if self.x >= 900 and self.pos_x:
+            self.pos_x = False
+        elif self.x <= 100 and not self.pos_x:
+            self.pos_x = True
+        if self.pos_x:
+            self.x += 10
+        else:
+            self.x -= 10
+
     def get_hp(self):
         return 150 - self.count
 
@@ -658,10 +669,10 @@ class Asteroid(pygame.sprite.Sprite):
         super().__init__(asteroid_sprites)
         scale = random.choices([0.05, 0.09])[0]
         self.x, self.y = (randint(-width * 0.5, -width * 0.1), randint(-height * 2, height * 0.5))
-        self.image = pygame.transform.scale(pygame.image.load('data/asteroid.png'), (int(width * scale), int(height * scale)))
+        self.image = pygame.transform.scale(pygame.image.load('data/asteroid.png'), (int(width * scale), int(height * scale) + 1))
         self.rect = pygame.Rect(self.x, self.y, self.image.get_width() * 0.7, self.image.get_height() * 0.7)
         self.image = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-        self.image = pygame.transform.scale(pygame.image.load('data/asteroid.png'), (int(width * scale), int(height * scale)))
+        self.image = pygame.transform.scale(pygame.image.load('data/asteroid.png'), (int(width * scale), int(height * scale) + 1))
 
         self.u = 4
 
@@ -1347,7 +1358,9 @@ def main():
         screen.blit(img3, (width * 0.05, height * 0.2))
         screen.blit(img2, (width * 0.05, height * 0.1))
         if len(Enemy_sprites_3) >= 1:
+
             for i in Enemy_sprites_3:
+                i.mons()
                 img4 = font.render(f'{i.get_hp()}/150 HP:' + ''.join(['|' for i in range(i.get_hp())]), True, 'red')
             screen.blit(img4, (width * 0.2, height * 0.9))
 
