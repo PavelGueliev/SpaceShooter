@@ -1094,6 +1094,7 @@ def final_screen(status='win'):
         pygame.mixer.music.load('data/gameover.mp3')
         pygame.mixer.music.play()
     intro_text = f'Ваш счет: {str(score)}'
+    intro_text_2 = 'Для выхода нажмите ESCAPE или ЛКМ'
 
     # create button instances
     exit_button = Button(width * 0.1, 0, exit_img, 1.5, final_screen_sprites)
@@ -1112,7 +1113,7 @@ def final_screen(status='win'):
                 run = False
                 terminate()
             if event.type == pygame.KEYUP:
-                if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
+                if event.key == pygame.K_ESCAPE:
                     up += 1
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
@@ -1122,7 +1123,7 @@ def final_screen(status='win'):
             if status == 'win':
                 save_data(str(name), score)
             name = None
-            start_screen()
+            start_screen('start')
             return
 
         if tic % 500 == 0:
@@ -1131,7 +1132,7 @@ def final_screen(status='win'):
             tic = 0
 
         font = pygame.font.Font(None, 100)
-        text_coord = 50
+        text_coord = 100
 
         tic += 1
         final_screen_sprites.draw(screen)
@@ -1140,6 +1141,10 @@ def final_screen(status='win'):
         final_screen_sprites.update()
         img = font.render(intro_text, True, 'white')
         screen.blit(img, (width * 0.3, height * 0.6))
+
+        font = pygame.font.Font(None, 50)
+        img2 = font.render(intro_text_2, True, 'white')
+        screen.blit(img2, (width * 0.22, height * 0.95))
 
         stars_sprites.update()
 
@@ -1156,17 +1161,17 @@ def terminate():
 def save_data(name, score):
     con = sqlite3.connect("data/Rating_Data.db")
     cur = con.cursor()
-
-    result = cur.execute(f'SELECT name, score FROM rating where name = {name}').fetchone()
-    if not result:
+    try:
+        result = cur.execute(f'SELECT name, score FROM rating where name = {name}').fetchone()
+    except:
         result = []
-    if name in result:
-        if result[1] < score:
+    if result:
+        if result[1] < score and name in result:
             cur.execute(f'''UPDATE rating
                                     SET score = ?
                                     WHERE name = {name};''', (str(score),))
     else:
-        cur.execute(f"INSERT INTO rating(name, score) VALUES ({name}, {score});")
+        cur.execute(f"INSERT INTO rating(name, score) VALUES(?, ?);", (str(name), score))
     con.commit()
 
 
@@ -1209,7 +1214,7 @@ def kill_all_sprites():
 
 
 def main():
-    global tic, start_time, level, shield_flag, time_count
+    global tic, start_time, level, shield_flag, time_count, score
 
     start_screen('start')
     clock = pygame.time.Clock()
@@ -1364,6 +1369,7 @@ def main():
                 buf_of_level = load_level(level) + ['+']
                 i.hp = 100
                 i.effect_bullet = 1
+                score = 0
 
         font = pygame.font.SysFont('serif', 24)
         img = font.render(f'Score: {score}', True, 'green')
@@ -1378,6 +1384,7 @@ def main():
                 buf_of_level = load_level(level) + ['+']
                 i.hp = 100
                 i.effect_bullet = 1
+                score = 0
         for i in hero_sprites:
             img3 = font.render(f'Shield: {i.get_shield()}', True, 'blue')
 
