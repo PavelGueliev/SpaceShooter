@@ -1164,15 +1164,19 @@ def save_data(name, score):
     try:
         result = cur.execute(f'SELECT name, score FROM rating where name = {name}').fetchone()
     except:
-        result = []
+        result = None
     if result:
-        if result[1] < score and name in result:
-            cur.execute(f'''UPDATE rating
-                                    SET score = ?
-                                    WHERE name = {name};''', (str(score),))
+        try:
+            if result[1] < score and name in result:
+                cur.execute(f'''UPDATE rating
+                                        SET score = ?
+                                        WHERE name = {name};''', (score,))
+                con.commit()
+        except Exception:
+            pass
     else:
-        cur.execute(f"INSERT INTO rating(name, score) VALUES(?, ?);", (str(name), score))
-    con.commit()
+        cur.execute(f"INSERT or REPLACE INTO rating(name, score) VALUES(?, ?);", (str(name), score))
+        con.commit()
 
 
 def load_level(txt_file):
